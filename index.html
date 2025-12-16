@@ -258,3 +258,2471 @@
                 audio.play().catch(e => console.log('No se pudo reproducir el sonido'));
             }
         }
+        
+        // BASE DE DATOS DE CURSOS Y PARALELOS (desde Excel UEPDC) - CORREGIDO Y ORDENADO
+        const CURSOS_PARALELOS = {
+            "Inicial": {
+                "cursos": [
+                    "Inicial 1",
+                    "Inicial 2"
+                ],
+                "paralelos": {
+                    "Inicial 1": ["A"],
+                    "Inicial 2": ["A", "B"]
+                }
+            },
+            "Escuela": {
+                "cursos": [
+                    "Primer Grado EGB",
+                    "Segundo Grado EGB",
+                    "Tercer Grado EGB",
+                    "Cuarto Grado EGB",
+                    "Quinto Grado EGB",
+                    "Sexto Grado EGB",
+                    "Séptimo Grado EGB"
+                ],
+                "paralelos": {
+                    "Primer Grado EGB": ["A", "B"],
+                    "Segundo Grado EGB": ["A", "B"],
+                    "Tercer Grado EGB": ["A", "B"],
+                    "Cuarto Grado EGB": ["A", "B"],
+                    "Quinto Grado EGB": ["A", "B"],
+                    "Sexto Grado EGB": ["A", "B"],
+                    "Séptimo Grado EGB": ["A"]
+                }
+            },
+            "Básica Superior": {
+                "cursos": [
+                    "Octavo Grado EGB",
+                    "Noveno Grado EGB",
+                    "Décimo Grado EGB"
+                ],
+                "paralelos": {
+                    "Octavo Grado EGB": ["A", "B", "C"],
+                    "Noveno Grado EGB": ["A", "B", "C"],
+                    "Décimo Grado EGB": ["A", "B", "C"]
+                }
+            },
+            "Bachillerato": {
+                "cursos": [
+                    "Primer Año BGU - Ciencias",
+                    "Primer Año BGU - TICS Informática",
+                    "Primer Año BGU - Contable",
+                    "Segundo Año BGU - Ciencias",
+                    "Segundo Año BGU - TICS Informática",
+                    "Segundo Año BGU - Contable",
+                    "Tercer Año BGU - Ciencias",
+                    "Tercer Año BGU - TICS Informática",
+                    "Tercer Año BGU - Contable"
+                ],
+                "paralelos": {
+                    "Primer Año BGU - Ciencias": ["A", "B"],
+                    "Primer Año BGU - TICS Informática": ["A"],
+                    "Primer Año BGU - Contable": ["A"],
+                    "Segundo Año BGU - Ciencias": ["A", "B"],
+                    "Segundo Año BGU - TICS Informática": ["A"],
+                    "Segundo Año BGU - Contable": ["A"],
+                    "Tercer Año BGU - Ciencias": ["A", "B"],
+                    "Tercer Año BGU - TICS Informática": ["A", "B"],
+                    "Tercer Año BGU - Contable": ["A"]
+                }
+            }
+        };
+        
+        // Función para ordenar cursos en el orden correcto: Inicial → Bachillerato
+        function ordenarCursosCorrectamente(cursos) {
+            const ordenPrioridad = {
+                // Inicial
+                'Inicial 1 A - Inicial': 1,
+                'Inicial 2 A - Inicial': 2,
+                'Inicial 2 B - Inicial': 3,
+                
+                // Preparatoria (Primero)
+                'Primer Grado A - Preparatoria': 10,
+                'Primer Grado B - Preparatoria': 11,
+                
+                // Educación General Básica (EGB) - Segundo a Séptimo
+                'Segundo Grado A - Educación General Básica': 12,
+                'Segundo Grado B - Educación General Básica': 13,
+                'Tercer Grado A - Educación General Básica': 14,
+                'Tercer Grado B - Educación General Básica': 15,
+                'Cuarto Grado A - Educación General Básica': 16,
+                'Cuarto Grado B - Educación General Básica': 17,
+                'Quinto Grado A - Educación General Básica': 18,
+                'Quinto Grado B - Educación General Básica': 19,
+                'Sexto Grado A - Educación General Básica': 20,
+                'Sexto Grado B - Educación General Básica': 21,
+                'Séptimo Grado A - Educación General Básica': 22,
+                
+                // Educación General Básica (EGB) - Octavo a Décimo
+                'Octavo Grado A - Educación General Básica': 23,
+                'Octavo Grado B - Educación General Básica': 24,
+                'Octavo Grado C - Educación General Básica': 25,
+                'Noveno Grado A - Educación General Básica': 26,
+                'Noveno Grado B - Educación General Básica': 27,
+                'Noveno Grado C - Educación General Básica': 28,
+                'Décimo Grado A - Educación General Básica': 29,
+                'Décimo Grado B - Educación General Básica': 30,
+                'Décimo Grado C - Educación General Básica': 31,
+                
+                // Bachillerato - Primer Año (NOMBRES SIMPLIFICADOS)
+                'Primer Año BGU A - Bachillerato Ciencias': 40,
+                'Primer Año BGU B - Bachillerato Ciencias': 41,
+                'Primer Año BGU A - Bachillerato TICS Informática': 42,
+                'Primer Año BGU A - Bachillerato Contabilidad': 43,
+                
+                // Bachillerato - Segundo Año (NOMBRES SIMPLIFICADOS)
+                'Segundo Año BGU A - Bachillerato Ciencias': 50,
+                'Segundo Año BGU B - Bachillerato Ciencias': 51,
+                'Segundo Año BGU A - Bachillerato TICS Informática': 52,
+                'Segundo Año BGU A - Bachillerato Contabilidad': 53,
+                
+                // Bachillerato - Tercer Año (NOMBRES SIMPLIFICADOS)
+                'Tercer Año BGU A - Bachillerato Ciencias': 60,
+                'Tercer Año BGU B - Bachillerato Ciencias': 61,
+                'Tercer Año BGU A - Bachillerato TICS Informática': 62,
+                'Tercer Año BGU B - Bachillerato TICS Informática': 63
+            };
+            
+            return cursos.sort((a, b) => {
+                const prioridadA = ordenPrioridad[a] || 9999;
+                const prioridadB = ordenPrioridad[b] || 9999;
+                
+                // Si tienen prioridad definida, ordenar por prioridad
+                if (prioridadA !== 9999 || prioridadB !== 9999) {
+                    return prioridadA - prioridadB;
+                }
+                
+                // Si no tienen prioridad, ordenar alfabéticamente
+                return a.localeCompare(b, 'es');
+            });
+        }
+        
+        
+        // BASE DE DATOS DE ESTUDIANTES
+        let ESTUDIANTES_BD = {};
+        
+        // Cargar base de datos de estudiantes
+        async function cargarEstudiantes() {
+            try {
+                const response = await fetch('estudiantes_uepdc.json');
+                if (!response.ok) throw new Error('No se pudo cargar la base de datos');
+                ESTUDIANTES_BD = await response.json();
+                console.log('✅ Base de datos de estudiantes cargada:', Object.keys(ESTUDIANTES_BD).length, 'cursos');
+                return true;
+            } catch (error) {
+                console.error('❌ Error al cargar estudiantes:', error);
+                showNotification('Error: No se pudo cargar la base de datos de estudiantes', 'error');
+                return false;
+            }
+        }
+        
+        // Buscar estudiante por email
+        function buscarEstudiantePorEmail(email) {
+            for (const curso in ESTUDIANTES_BD) {
+                const estudiante = ESTUDIANTES_BD[curso].find(e => 
+                    e['Email estudiante'].toLowerCase() === email.toLowerCase()
+                );
+                if (estudiante) {
+                    return {
+                        nombre: estudiante['Nombre completo estudiante'],
+                        email: estudiante['Email estudiante'],
+                        curso: curso
+                    };
+                }
+            }
+            return null;
+        }
+        
+        // CONFIGURACIÓN DE EMAILJS
+        const EMAILJS_CONFIG = {
+            PUBLIC_KEY: 'RtA5YFyTxrNjrb_CX',
+            SERVICE_ID: 'service_83qp86c',
+            TEMPLATE_ID: 'template_nipqoci',  // ✅ Template de ESTUDIANTES (Auto-Reply)
+            TEMPLATE_ID_PROFESOR: 'template_lrn0pgf'  // ✅ Template de PROFESORES (Contact Us)
+        };
+        
+        // Inicializar EmailJS
+        (function() {
+            try {
+                if (typeof emailjs !== 'undefined') {
+                    emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+                    console.log('✅ EmailJS inicializado correctamente');
+                    console.log('📋 Config:', {
+                        publicKey: EMAILJS_CONFIG.PUBLIC_KEY,
+                        serviceId: EMAILJS_CONFIG.SERVICE_ID,
+                        templateId: EMAILJS_CONFIG.TEMPLATE_ID
+                    });
+                } else {
+                    console.error('❌ EmailJS no está cargado');
+                }
+            } catch (error) {
+                console.error('❌ Error al inicializar EmailJS:', error);
+            }
+        })();
+        
+        // FUNCIÓN DE ENVÍO DE EMAIL
+        async function enviarEmailAceptacion(turno) {
+            console.log('📧 INICIANDO ENVÍO DE EMAIL');
+            console.log('Datos del turno:', turno);
+            
+            if (!turno || typeof turno !== 'object') {
+                console.error('❌ Turno no válido');
+                return false;
+            }
+            
+            let emailEstudiante = turno.email_estudiante;
+            
+            if (!emailEstudiante) {
+                emailEstudiante = turno.correo_estudiante || turno.email || null;
+            }
+            
+            if (emailEstudiante === null || emailEstudiante === undefined) {
+                console.error('❌ Email es NULL o undefined');
+                return false;
+            }
+            
+            const emailLimpio = String(emailEstudiante).trim();
+            
+            if (!emailLimpio || emailLimpio === 'null' || emailLimpio === 'undefined') {
+                console.error('❌ Email vacío o inválido');
+                return false;
+            }
+            
+            const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!regexEmail.test(emailLimpio)) {
+                console.error('❌ Email con formato inválido:', emailLimpio);
+                return false;
+            }
+            
+            console.log('✅ Email validado:', emailLimpio);
+            
+            // Verificar EmailJS
+            if (typeof emailjs === 'undefined') {
+                console.warn('⚠️ EmailJS no está disponible - continuando sin enviar email');
+                return false;
+            }
+            
+            try {
+                const fechaSolicitud = turno.created_at 
+                    ? new Date(turno.created_at).toLocaleDateString('es-ES', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })
+                    : 'No disponible';
+                
+                const horaSolicitud = turno.created_at
+                    ? new Date(turno.created_at).toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    })
+                    : 'No disponible';
+                
+                const esProfesor = turno.solicitado_por === 'profesor';
+                
+                const templateParams = {
+                    to_email: String(emailLimpio),
+                    reply_to: String(emailLimpio),
+                    to_name: String(turno.nombre || 'Estudiante'),
+                    student_name: String(turno.nombre || 'Estudiante'),
+                    turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
+                    fecha_solicitud: String(fechaSolicitud),
+                    hora_solicitud: String(horaSolicitud),
+                    hora_atencion: String(turno.hora_atencion_programada || 'Por confirmar'),
+                    motivo: String(turno.motivo || 'No especificado'),
+                    curso: String(turno.curso || 'No especificado'),
+                    cedula: String(turno.cedula || 'No especificada'),
+                    teacher_name: esProfesor ? String(turno.nombre_profesor || 'Profesor') : '',
+                    teacher_email: esProfesor ? String(turno.email_profesor || '') : ''
+                };
+                
+                // Usar template diferente si fue solicitado por profesor
+                const templateId = esProfesor ? 
+                    EMAILJS_CONFIG.TEMPLATE_ID_PROFESOR : 
+                    EMAILJS_CONFIG.TEMPLATE_ID;
+                
+                console.log('📤 Parámetros del email:', templateParams);
+                console.log('🚀 Intentando enviar email a:', emailLimpio);
+                
+                const response = await emailjs.send(
+                    EMAILJS_CONFIG.SERVICE_ID,
+                    templateId,
+                    templateParams
+                );
+                
+                console.log('✅ EMAIL ENVIADO EXITOSAMENTE');
+                console.log('Respuesta de EmailJS:', response);
+                showNotification(`📧 Email enviado a ${emailLimpio}`, 'success');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ ERROR AL ENVIAR EMAIL:', error);
+                console.error('Tipo de error:', typeof error);
+                console.error('Status:', error.status);
+                console.error('Text:', error.text);
+                
+                let mensajeError = 'Turno aceptado';
+                if (error.status === 412) {
+                    mensajeError += ' (verifica configuración EmailJS)';
+                } else if (error.status === 400) {
+                    mensajeError += ' (parámetros de email inválidos)';
+                } else if (error.text) {
+                    mensajeError += ` (${error.text})`;
+                } else {
+                    mensajeError += ' (email no enviado)';
+                }
+                
+                showNotification(`✅ ${mensajeError}`, 'success');
+                return false;
+            }
+        }
+        
+        // CONFIGURACIÓN DE SUPABASE
+        const SUPABASE_URL = 'https://hynubiwdlpkfzqgzahlp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5bnViaXdkbHBrZnpxZ3phaGxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MDM1MzYsImV4cCI6MjA3OTE3OTUzNn0.xbiu1OVD9I8V_NYj0gem1zK5wICW_cXrxIoRRwQFbAg';
+
+        const DECE_CREDENTIALS = {
+            email: 'deceuepdcdece@uepdc.edu.ec',
+            password: 'geraldmontoya'
+        };
+
+        // UTILIDADES DE HORA - ECUADOR
+        const HoraUtils = {
+            getHoraEcuador() {
+                const ahora = new Date();
+                try {
+                    const opciones = { 
+                        timeZone: 'America/Guayaquil', 
+                        year: 'numeric',
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    };
+                    
+                    const formateador = new Intl.DateTimeFormat('es-EC', opciones);
+                    const partes = formateador.formatToParts(ahora);
+                    
+                    const valores = {};
+                    partes.forEach(parte => {
+                        if (parte.type !== 'literal') {
+                            valores[parte.type] = parte.value;
+                        }
+                    });
+                    
+                    const horaEcuador = new Date(
+                        parseInt(valores.year),
+                        parseInt(valores.month) - 1,
+                        parseInt(valores.day),
+                        parseInt(valores.hour),
+                        parseInt(valores.minute),
+                        parseInt(valores.second)
+                    );
+                    
+                    return horaEcuador;
+                    
+                } catch (error) {
+                    const utc = ahora.getTime() + (ahora.getTimezoneOffset() * 60000);
+                    return new Date(utc + (-5 * 3600000));
+                }
+            },
+            
+            horaAMinutos(hora) {
+                const [h, m] = hora.split(':').map(Number);
+                return h * 60 + m;
+            },
+            
+            minutosAHora(minutos) {
+                const h = Math.floor(minutos / 60);
+                const m = minutos % 60;
+                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            },
+            
+            agregarMinutos(hora, minutos) {
+                const minutosActual = this.horaAMinutos(hora);
+                const nuevosMinutos = minutosActual + minutos;
+                return this.minutosAHora(nuevosMinutos);
+            },
+            
+            formatearAMPM(hora) {
+                const [h, m] = hora.split(':').map(Number);
+                const ampm = h >= 12 ? 'p.m' : 'a.m';
+                const hora12 = h % 12 || 12;
+                return `${hora12}:${m.toString().padStart(2, '0')} ${ampm}`;
+            },
+            
+            generarRango(horaInicio) {
+                const horaFin = this.agregarMinutos(horaInicio, 40);
+                return `${this.formatearAMPM(horaInicio)} a ${this.formatearAMPM(horaFin)}`;
+            },
+            
+            citaYaTermino(horaInicio) {
+                const horaEcuador = this.getHoraEcuador();
+                const horaActualMinutos = horaEcuador.getHours() * 60 + horaEcuador.getMinutes();
+                const horaInicioMinutos = this.horaAMinutos(horaInicio);
+                const horaFinMinutos = horaInicioMinutos + 40;
+                return horaActualMinutos >= horaFinMinutos;
+            },
+            
+            citaEnProceso(horaInicio) {
+                const horaEcuador = this.getHoraEcuador();
+                const horaActualMinutos = horaEcuador.getHours() * 60 + horaEcuador.getMinutes();
+                const horaInicioMinutos = this.horaAMinutos(horaInicio);
+                const horaFinMinutos = horaInicioMinutos + 40;
+                return horaActualMinutos >= horaInicioMinutos && horaActualMinutos < horaFinMinutos;
+            },
+            
+            extraerHoraInicio(rangoHora) {
+                const match = rangoHora.match(/(\d{1,2}):(\d{2})\s*(a\.m|p\.m)/);
+                if (!match) return null;
+                
+                let hora = parseInt(match[1]);
+                const minutos = match[2];
+                const periodo = match[3];
+                
+                if (periodo === 'p.m' && hora !== 12) {
+                    hora += 12;
+                } else if (periodo === 'a.m' && hora === 12) {
+                    hora = 0;
+                }
+                
+                return `${hora.toString().padStart(2, '0')}:${minutos}`;
+            }
+        };
+
+        // ESTADO DE LA APLICACIÓN
+        let state = {
+            vista: 'login',
+            tipoUsuario: null,
+            usuarioActual: null,
+            configurado: false,
+            estadoDECE: { id: 1, disponible: true },
+            turnos: [],
+            miTurno: null,
+            estadisticas: {
+                totalHoy: 0,
+                pendientes: 0,
+                aceptados: 0,
+                enProceso: 0,
+                atendidos: 0,
+                rechazados: 0,
+                no_asistio: 0
+            },
+            filtroTurnos: 'todos',
+            busqueda: '',
+            historialEstudiante: []
+        };
+
+        // CLIENTE SUPABASE
+        const supabase = {
+            from: (table) => ({
+                select: async (columns = '*') => {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${columns}`, {
+                        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                    });
+                    const data = await response.json();
+                    return { data, error: response.ok ? null : data };
+                },
+                insert: async (values) => {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(values)
+                    });
+                    const data = await response.json();
+                    return { data, error: response.ok ? null : data };
+                },
+                update: (values) => ({
+                    eq: async (column, value) => {
+                        const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${column}=eq.${value}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=representation'
+                            },
+                            body: JSON.stringify(values)
+                        });
+                        const data = await response.json();
+                        return { data, error: response.ok ? null : data };
+                    }
+                }),
+                delete: () => ({
+                    eq: async (column, value) => {
+                        const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${column}=eq.${value}`, {
+                            method: 'DELETE',
+                            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                        });
+                        return { error: response.ok ? null : await response.json() };
+                    }
+                })
+            })
+        };
+
+        // FUNCIONES DE DATOS
+        async function verificarYActualizarEstadosTurnos(turnos) {
+            for (const turno of turnos) {
+                if (turno.estado === 'aceptado' && turno.hora_atencion_programada) {
+                    const horaInicio = HoraUtils.extraerHoraInicio(turno.hora_atencion_programada);
+                    
+                    if (!horaInicio) continue;
+                    
+                    if (HoraUtils.citaYaTermino(horaInicio)) {
+                        console.log(`✅ Auto-marcando turno ${turno.id} como ATENDIDO`);
+                        await supabase.from('turnos').update({ 
+                            estado: 'atendido',
+                            hora_atencion: new Date().toISOString()
+                        }).eq('id', turno.id);
+                    }
+                }
+            }
+        }
+        
+        async function cargarDatos() {
+            try {
+                const { data: config } = await supabase.from('configuracion').select('*');
+                if (config && config.length > 0) {
+                    const nuevoEstado = config[0].disponible;
+                    if (state.estadoDECE.disponible !== nuevoEstado) {
+                        state.estadoDECE = config[0];
+                        actualizarEstadoDECEUI();
+                    }
+                }
+                
+                const { data: turnosData } = await supabase.from('turnos').select('*');
+                if (turnosData) {
+                    await verificarYActualizarEstadosTurnos(turnosData);
+                    
+                    const { data: turnosActualizados } = await supabase.from('turnos').select('*');
+                    const turnosOrdenados = turnosActualizados.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
+                    state.turnos = turnosOrdenados;
+                    calcularEstadisticas();
+                    
+                    if (state.vista === 'dece') {
+                        actualizarEstadisticasUI();
+                        actualizarListaTurnosUI();
+                    }
+                }
+                
+                const miTurnoId = localStorage.getItem('miTurnoId');
+                if (miTurnoId && turnosData) {
+                    const turnoActualizado = state.turnos.find(t => t.id === parseInt(miTurnoId));
+                    if (turnoActualizado) {
+                        state.miTurno = turnoActualizado;
+                        
+                        if (state.vista === 'estudiante' && state.miTurno) {
+                            actualizarMiTurnoUI();
+                        }
+                    } else {
+                        state.miTurno = null;
+                        localStorage.removeItem('miTurnoId');
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+            }
+        }
+
+        function calcularEstadisticas() {
+            const hoy = new Date().toLocaleDateString('es-ES');
+            const turnosHoy = state.turnos.filter(t => 
+                new Date(t.created_at).toLocaleDateString('es-ES') === hoy
+            );
+            
+            let enProceso = 0;
+            state.turnos.forEach(t => {
+                if (t.estado === 'aceptado' && t.hora_atencion_programada) {
+                    const horaInicio = HoraUtils.extraerHoraInicio(t.hora_atencion_programada);
+                    if (horaInicio && HoraUtils.citaEnProceso(horaInicio)) {
+                        enProceso++;
+                    }
+                }
+            });
+            
+            state.estadisticas = {
+                totalHoy: turnosHoy.length,
+                pendientes: state.turnos.filter(t => t.estado === 'pendiente').length,
+                aceptados: state.turnos.filter(t => t.estado === 'aceptado').length,
+                enProceso: enProceso,
+                atendidos: state.turnos.filter(t => t.estado === 'atendido').length,
+                rechazados: state.turnos.filter(t => t.estado === 'rechazado').length,
+                no_asistio: state.turnos.filter(t => t.estado === 'no_asistio').length
+            };
+        }
+
+        async function verificarConfiguracion() {
+            try {
+                const { data, error } = await supabase.from('configuracion').select('*');
+                if (!error) {
+                    state.configurado = true;
+                    if (data && data.length > 0) {
+                        state.estadoDECE = data[0];
+                    }
+                    await cargarDatos();
+                }
+            } catch (err) {
+                state.configurado = false;
+            }
+        }
+
+        // FUNCIONES DE ACTUALIZACIÓN UI
+        function actualizarEstadoDECEUI() {
+            const elemento = document.getElementById('estadoDECE');
+            if (!elemento) return;
+            
+            const disponible = state.estadoDECE.disponible;
+            elemento.innerHTML = `
+                <div class="${disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} p-10 rounded-2xl text-center text-white shadow-xl smooth-update">
+                    <div class="text-7xl mb-4">${disponible ? '✅' : '❌'}</div>
+                    <div class="text-4xl font-black mb-3">
+                        ${disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
+                    </div>
+                    <p class="text-xl opacity-90">${disponible ? '¡Puedes solicitar un turno ahora!' : 'El DECE no está recibiendo solicitudes'}</p>
+                </div>
+            `;
+        }
+        
+        function actualizarEstadisticasUI() {
+            const elemento = document.getElementById('estadisticas');
+            if (!elemento) return;
+            
+            elemento.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-5 rounded-2xl text-center border-2 border-gray-300 card-hover">
+                        <div class="text-3xl font-black text-gray-700 mb-1">${state.estadisticas.totalHoy}</div>
+                        <div class="text-xs text-gray-600 font-semibold">📋 Total hoy</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-2xl text-center border-2 border-yellow-300 card-hover">
+                        <div class="text-3xl font-black text-yellow-700 mb-1">${state.turnos.filter(t => t.estado === 'pendiente' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
+                        <div class="text-xs text-yellow-600 font-semibold">⏳ Pendientes</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl text-center border-2 border-orange-300 card-hover">
+                        <div class="text-3xl font-black text-orange-700 mb-1">${state.estadisticas.enProceso}</div>
+                        <div class="text-xs text-orange-600 font-semibold">🔄 En proceso</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl text-center border-2 border-blue-300 card-hover">
+                        <div class="text-3xl font-black text-blue-700 mb-1">${state.turnos.filter(t => t.estado === 'atendido' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
+                        <div class="text-xs text-blue-600 font-semibold">✔️ Completados</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-50 to-red-100 p-5 rounded-2xl text-center border-2 border-red-300 card-hover">
+                        <div class="text-3xl font-black text-red-700 mb-1">${state.estadisticas.no_asistio}</div>
+                        <div class="text-xs text-red-600 font-semibold">🚫 No asistió</div>
+                    </div>
+                </div>
+            `;
+            
+            // TAMBIÉN actualizar la sección de Control de arriba
+            actualizarControlUI();
+        }
+        
+        function actualizarControlUI() {
+            // Actualizar los números pequeños de las tarjetas de Control
+            const tarjetasPequenas = document.querySelector('.grid.grid-cols-2.gap-3');
+            if (tarjetasPequenas) {
+                tarjetasPequenas.innerHTML = `
+                    <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                        <div class="control-stats-number font-black">${state.estadisticas.pendientes}</div>
+                        <div class="control-stats-label font-semibold opacity-90">⏳ Pendientes</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-400 to-green-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                        <div class="control-stats-number font-black">${state.estadisticas.aceptados}</div>
+                        <div class="control-stats-label font-semibold opacity-90">✅ Aceptados</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-orange-400 to-orange-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                        <div class="control-stats-number font-black">${state.estadisticas.enProceso}</div>
+                        <div class="control-stats-label font-semibold opacity-90">🔄 En proceso</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-400 to-blue-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                        <div class="control-stats-number font-black">${state.estadisticas.atendidos}</div>
+                        <div class="control-stats-label font-semibold opacity-90">✔️ Atendidos</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function actualizarListaTurnosUI() {
+            const elemento = document.getElementById('listaTurnos');
+            if (!elemento) return;
+            
+            const turnosFiltrados = filtrarYBuscarTurnos();
+            
+            if (turnosFiltrados.length === 0) {
+                elemento.innerHTML = renderSinTurnos();
+                return;
+            }
+            
+            elemento.innerHTML = `
+                <div class="space-y-4">
+                    ${turnosFiltrados.map(turno => renderTurnoCard(turno)).join('')}
+                </div>
+            `;
+        }
+        
+        function actualizarMiTurnoUI() {
+            const elemento = document.getElementById('miTurnoContainer');
+            if (!elemento || !state.miTurno) return;
+            
+            elemento.innerHTML = renderMiTurnoContent();
+        }
+        
+        function filtrarYBuscarTurnos() {
+            let turnosFiltrados = state.filtroTurnos === 'todos' 
+                ? state.turnos 
+                : state.filtroTurnos === 'en_proceso'
+                ? state.turnos.filter(t => {
+                    if (t.estado === 'aceptado' && t.hora_atencion_programada) {
+                        const horaInicio = HoraUtils.extraerHoraInicio(t.hora_atencion_programada);
+                        return horaInicio && HoraUtils.citaEnProceso(horaInicio);
+                    }
+                    return false;
+                })
+                : state.turnos.filter(t => t.estado === state.filtroTurnos);
+            
+            if (state.busqueda) {
+                const busqueda = state.busqueda.toLowerCase();
+                turnosFiltrados = turnosFiltrados.filter(t => 
+                    t.nombre.toLowerCase().includes(busqueda) ||
+                    t.cedula.includes(busqueda) ||
+                    t.curso.toLowerCase().includes(busqueda) ||
+                    t.email_estudiante?.toLowerCase().includes(busqueda)
+                );
+            }
+            
+            return turnosFiltrados;
+        }
+
+        // AUTENTICACIÓN
+        async function loginEstudiante(email, password) {
+            try {
+                // Buscar en Supabase con filtro en URL
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/usuarios_estudiantes?email=eq.${encodeURIComponent(email)}&password=eq.${encodeURIComponent(password)}&select=*`,
+                    {
+                        headers: { 
+                            'apikey': SUPABASE_KEY, 
+                            'Authorization': `Bearer ${SUPABASE_KEY}` 
+                        }
+                    }
+                );
+                const usuarios = await response.json();
+                
+                if (!response.ok || !usuarios || usuarios.length === 0) {
+                    console.warn('⚠️ No encontrado en Supabase, intentando localStorage');
+                    // Fallback a localStorage
+                    const usuariosLocal = JSON.parse(localStorage.getItem('usuarios_estudiantes') || '[]');
+                    const usuario = usuariosLocal.find(u => u.email === email && u.password === password);
+                    if (!usuario) return false;
+                    
+                    state.usuarioActual = usuario;
+                    state.tipoUsuario = 'estudiante';
+                    state.vista = 'estudiante';
+                    localStorage.setItem('sesion', JSON.stringify({ tipo: 'estudiante', usuario }));
+                    
+                    await cargarDatos();
+                    const miTurnoId = localStorage.getItem('miTurnoId');
+                    if (miTurnoId) {
+                        const turno = state.turnos.find(t => t.id === parseInt(miTurnoId));
+                        if (turno) state.miTurno = turno;
+                        else localStorage.removeItem('miTurnoId');
+                    }
+                    
+                    state.historialEstudiante = state.turnos.filter(t => t.email_estudiante === email);
+                    render();
+                    showNotification(`¡Bienvenido/a ${usuario.nombre}!`, 'success');
+                    return true;
+                }
+                
+                if (usuarios && usuarios.length > 0) {
+                    const usuario = usuarios[0];
+                    state.usuarioActual = usuario;
+                    state.tipoUsuario = 'estudiante';
+                    state.vista = 'estudiante';
+                    localStorage.setItem('sesion', JSON.stringify({ tipo: 'estudiante', usuario }));
+                    
+                    await cargarDatos();
+                    const miTurnoId = localStorage.getItem('miTurnoId');
+                    if (miTurnoId) {
+                        const turno = state.turnos.find(t => t.id === parseInt(miTurnoId));
+                        if (turno) state.miTurno = turno;
+                        else localStorage.removeItem('miTurnoId');
+                    }
+                    
+                    state.historialEstudiante = state.turnos.filter(t => t.email_estudiante === email);
+                    render();
+                    showNotification(`¡Bienvenido/a ${usuario.nombre}!`, 'success');
+                    return true;
+                }
+                
+                return false;
+            } catch (err) {
+                console.error('❌ Error en loginEstudiante:', err);
+                return false;
+            }
+        }
+
+        async function registrarEstudiante(datosFormulario) {
+            try {
+                const { nombre, email, cedula, nivel, grado, paralelo, password } = datosFormulario;
+                
+                // Validar email institucional
+                if (!email.endsWith('@est.uepdc.edu.ec')) {
+                    showNotification('❌ Debes usar tu correo institucional (@est.uepdc.edu.ec)', 'error');
+                    return false;
+                }
+                
+                // Validar nombre completo (al menos dos palabras)
+                const palabrasNombre = nombre.trim().split(/\s+/);
+                if (palabrasNombre.length < 2) {
+                    showNotification('❌ Ingresa tu nombre completo (nombre y apellido)', 'error');
+                    return false;
+                }
+                
+                // Construir curso completo: "Grado + Paralelo" (ej: "Segundo Grado EGB A")
+                const cursoCompleto = `${grado} ${paralelo}`;
+                
+                // Verificar email en Supabase
+                const responseEmail = await fetch(
+                    `${SUPABASE_URL}/rest/v1/usuarios_estudiantes?email=eq.${encodeURIComponent(email)}&select=email`,
+                    {
+                        headers: { 
+                            'apikey': SUPABASE_KEY, 
+                            'Authorization': `Bearer ${SUPABASE_KEY}` 
+                        }
+                    }
+                );
+                const emailData = await responseEmail.json();
+                
+                if (emailData && emailData.length > 0) {
+                    showNotification('El correo ya está registrado', 'error');
+                    return false;
+                }
+                
+                // Verificar cédula en Supabase
+                const responseCedula = await fetch(
+                    `${SUPABASE_URL}/rest/v1/usuarios_estudiantes?cedula=eq.${encodeURIComponent(cedula)}&select=cedula`,
+                    {
+                        headers: { 
+                            'apikey': SUPABASE_KEY, 
+                            'Authorization': `Bearer ${SUPABASE_KEY}` 
+                        }
+                    }
+                );
+                const cedulaData = await responseCedula.json();
+                
+                if (cedulaData && cedulaData.length > 0) {
+                    showNotification('La cédula ya está registrada', 'error');
+                    return false;
+                }
+                
+                // Insertar en Supabase
+                const nuevoUsuario = { nombre, email, cedula, curso: cursoCompleto, password };
+                const { data, error } = await supabase
+                    .from('usuarios_estudiantes')
+                    .insert([nuevoUsuario]);
+                
+                if (error) {
+                    console.error('⚠️ Error Supabase, guardando en localStorage:', error);
+                    // Fallback a localStorage
+                    const usuarios = JSON.parse(localStorage.getItem('usuarios_estudiantes') || '[]');
+                    
+                    if (usuarios.find(u => u.email === email)) {
+                        showNotification('El correo ya está registrado', 'error');
+                        return false;
+                    }
+                    if (usuarios.find(u => u.cedula === cedula)) {
+                        showNotification('La cédula ya está registrada', 'error');
+                        return false;
+                    }
+                    
+                    usuarios.push(nuevoUsuario);
+                    localStorage.setItem('usuarios_estudiantes', JSON.stringify(usuarios));
+                    showNotification('⚠️ Registrado localmente (sin conexión a BD)', 'warning');
+                } else {
+                    console.log('✅ Usuario registrado en Supabase:', data);
+                    showNotification(`¡Registro exitoso! Bienvenido/a ${nombre}`, 'success');
+                }
+                
+                // Iniciar sesión
+                state.usuarioActual = nuevoUsuario;
+                state.tipoUsuario = 'estudiante';
+                state.vista = 'estudiante';
+                localStorage.setItem('sesion', JSON.stringify({ tipo: 'estudiante', usuario: nuevoUsuario }));
+                
+                await cargarDatos();
+                render();
+                return true;
+            } catch (err) {
+                console.error('❌ Error en registrarEstudiante:', err);
+                showNotification('Error: ' + err.message, 'error');
+                return false;
+            }
+        }
+
+        function loginDECE(email, password) {
+            if (email === DECE_CREDENTIALS.email && password === DECE_CREDENTIALS.password) {
+                state.tipoUsuario = 'dece';
+                state.vista = 'dece';
+                localStorage.setItem('sesion', JSON.stringify({ tipo: 'dece' }));
+                
+                cargarDatos().then(() => {
+                    render();
+                    showNotification('Sesión DECE iniciada correctamente', 'success');
+                });
+                return true;
+            }
+            return false;
+        }
+
+
+        
+        async function loginProfesor(email) {
+            // Validar que sea email de profesor (@uepdc.edu.ec)
+            if (!email.endsWith('@uepdc.edu.ec') || email.endsWith('@est.uepdc.edu.ec')) {
+                showNotification('Debes usar tu correo institucional de profesor (@uepdc.edu.ec)', 'error');
+                return false;
+            }
+            
+            // Extraer nombre del email
+            const nombreEmail = email.split('@')[0].replace(/\./g, ' ');
+            const nombre = nombreEmail.split(' ').map(p => 
+                p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
+            ).join(' ');
+            
+            state.usuarioActual = { email, nombre };
+            state.tipoUsuario = 'profesor';
+            state.vista = 'profesor';
+            localStorage.setItem('sesion', JSON.stringify({ tipo: 'profesor', usuario: { email, nombre } }));
+            
+            await cargarDatos();
+            render();
+            showNotification(`¡Bienvenido/a Profesor/a ${nombre}!`, 'success');
+            return true;
+        }
+            function cerrarSesion() {
+            state.usuarioActual = null;
+            state.tipoUsuario = null;
+            state.vista = 'login';
+            state.miTurno = null;
+            state.historialEstudiante = [];
+            localStorage.removeItem('sesion');
+            localStorage.removeItem('miTurnoId');
+            render();
+            showNotification('Sesión cerrada', 'info');
+        }
+
+        // GESTIÓN DE TURNOS
+        async function registrarTurno(form) {
+            if (!state.estadoDECE.disponible) {
+                showNotification('El DECE no está disponible en este momento', 'warning');
+                return false;
+            }
+            
+            try {
+                const emailEstudiante = state.usuarioActual?.email;
+                
+                if (!emailEstudiante || emailEstudiante.trim() === '') {
+                    showNotification('Error: No se pudo obtener tu email', 'error');
+                    return false;
+                }
+                
+                const nuevoTurno = {
+                    nombre: form.nombre,
+                    cedula: form.cedula,
+                    curso: form.curso,
+                    motivo: form.motivo,
+                    situacion: form.situacion || '',
+                    estado: 'pendiente',
+                    numero_turno: state.turnos.length + 1,
+                    email_estudiante: emailEstudiante.trim()
+                };
+                
+                const { data, error } = await supabase.from('turnos').insert([nuevoTurno]);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    const turnoGuardado = data[0];
+                    localStorage.setItem('miTurnoId', turnoGuardado.id);
+                    await cargarDatos();
+                    
+                    const turnoCreado = state.turnos.find(t => t.id === turnoGuardado.id);
+                    if (turnoCreado) state.miTurno = turnoCreado;
+                    
+                    showNotification('¡Turno registrado exitosamente! 🎉', 'success');
+                    render();
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al registrar el turno: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+
+        
+        async function registrarTurnoProfesor(turnoData) {
+            if (!state.estadoDECE.disponible) {
+                showNotification('El DECE no está disponible en este momento', 'warning');
+                return false;
+            }
+            
+            try {
+                const nuevoTurno = {
+                    nombre: turnoData.nombre,
+                    cedula: turnoData.cedula,
+                    curso: turnoData.curso,
+                    motivo: turnoData.motivo,
+                    situacion: turnoData.situacion,
+                    estado: 'pendiente',
+                    numero_turno: state.turnos.length + 1,
+                    email_estudiante: turnoData.email_estudiante,
+                    solicitado_por: turnoData.solicitado_por,
+                    email_profesor: turnoData.email_profesor,
+                    nombre_profesor: turnoData.nombre_profesor
+                };
+                
+                const { data, error } = await supabase.from('turnos').insert([nuevoTurno]);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    await cargarDatos();
+                    showNotification(`¡Turno registrado exitosamente para ${turnoData.nombre}! 🎉`, 'success');
+                    
+                    // Limpiar formulario
+                    document.getElementById('formTurnoProfesor').reset();
+                    document.getElementById('estudianteSelect').disabled = true;
+                    document.getElementById('estudianteInfo').classList.add('hidden');
+                    
+                    render();
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al registrar el turno: ' + error.message, 'error');
+                return false;
+            }
+        }
+            async function cambiarDisponibilidad() {
+            try {
+                const nuevoEstado = !state.estadoDECE.disponible;
+                
+                const { error } = await supabase.from('configuracion')
+                    .update({ disponible: nuevoEstado })
+                    .eq('id', state.estadoDECE.id);
+                    
+                if (error) throw error;
+                
+                state.estadoDECE.disponible = nuevoEstado;
+                showNotification(nuevoEstado ? 'Sistema activado ✅' : 'Sistema pausado ⏸️', 'info');
+                
+                actualizarEstadoDECEUI();
+                
+                const btn = document.getElementById('btnDisponibilidad');
+                if (btn) {
+                    btn.className = `${nuevoEstado ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} control-disponible-btn text-white rounded-xl font-bold transition-all shadow-lg btn-modern`;
+                    btn.innerHTML = `<span>${nuevoEstado ? '⏸️ Pausar Sistema' : '▶️ Activar Sistema'}</span>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function actualizarEstadoTurno(turnoId, nuevoEstado, motivoRechazo = null, horaProgramada = null, notaDECE = null) {
+            try {
+                const actualizado = { estado: nuevoEstado };
+                if (motivoRechazo) actualizado.motivo_rechazo = motivoRechazo;
+                if (horaProgramada) actualizado.hora_atencion_programada = horaProgramada;
+                if (notaDECE) actualizado.nota_dece = notaDECE;
+                if (nuevoEstado === 'atendido' || nuevoEstado === 'no_asistio') {
+                    actualizado.hora_atencion = new Date().toISOString();
+                }
+                
+                const { error } = await supabase.from('turnos').update(actualizado).eq('id', turnoId);
+                if (error) throw error;
+                
+                // Primero mostrar que el turno fue actualizado
+                const mensajes = {
+                    'aceptado': '✅ Turno aceptado correctamente',
+                    'rechazado': '❌ Turno rechazado',
+                    'atendido': '✔️ Turno marcado como atendido',
+                    'no_asistio': '🚫 Marcado como "No asistió"'
+                };
+                
+                showNotification(mensajes[nuevoEstado] || 'Turno actualizado', 'success');
+                
+                // Recargar datos
+                await cargarDatos();
+                
+                // Intentar enviar email DESPUÉS de actualizar (sin bloquear)
+                if (nuevoEstado === 'aceptado') {
+                    const turnoActualizado = state.turnos.find(t => t.id === turnoId);
+                    if (turnoActualizado) {
+                        // Enviar email en segundo plano sin esperar
+                        enviarEmailAceptacion(turnoActualizado).catch(err => {
+                            console.warn('Email no enviado pero turno aceptado:', err);
+                        });
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function agregarNotaDECE(turnoId) {
+            const nota = prompt('Agregar nota interna del DECE:');
+            if (!nota) return;
+            
+            try {
+                const { error } = await supabase.from('turnos').update({ nota_dece: nota }).eq('id', turnoId);
+                if (error) throw error;
+                await cargarDatos();
+                showNotification('Nota agregada correctamente', 'success');
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+
+        // RENDERIZADO
+        function renderLogin() {
+            return `
+                <div class="flex items-center justify-center min-h-screen p-4 fade-in">
+                    <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full relative overflow-hidden border-4 border-yellow-400">
+                        <div class="absolute top-0 left-0 w-full h-3" style="background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);"></div>
+                        
+                        <div class="text-center mb-8">
+                            <div class="flex justify-center mb-6">
+                                <img src="https://i.ibb.co/wNhQpyX0/image-30.png" alt="UEPDC Logo" class="logo-institucional">
+                            </div>
+                            
+                            <h1 class="text-4xl font-black mb-3" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                Sistema de Turnos DECE
+                            </h1>
+                            <p class="text-gray-700 text-lg font-semibold">Departamento de Consejería Estudiantil</p>
+                            <div class="mt-4 inline-block px-5 py-2 rounded-full text-sm font-bold" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #1e3a8a;">
+                                🏫 UEPDC
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="grid grid-cols-3 gap-2 mb-6">
+                                <button id="btnEstudiante" class="py-4 px-4 text-white rounded-xl font-bold text-sm hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                                    <span>👨‍🎓 Estudiante</span>
+                                </button>
+                                <button id="btnProfesor" class="py-4 px-4 text-white rounded-xl font-bold text-sm hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                    <span>👨‍🏫 Profesor</span>
+                                </button>
+                                <button id="btnDECE" class="py-4 px-4 text-white rounded-xl font-bold text-sm hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
+                                    <span>👨‍⚕️ DECE</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="formContainer"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFormEstudiante() {
+            return `
+                <div class="space-y-4 fade-in">
+                    <div class="flex gap-2 border-b-2 pb-3" style="border-color: #60a5fa;">
+                        <button id="btnLoginEst" class="flex-1 py-3 border-b-4 font-bold text-lg transition-all" style="border-color: #1e3a8a; color: #1e3a8a;">
+                            Iniciar Sesión
+                        </button>
+                        <button id="btnRegistroEst" class="flex-1 py-3 text-gray-500 font-bold text-lg transition-all">
+                            Registrarse
+                        </button>
+                    </div>
+                    <div id="formEstudiante"></div>
+                </div>
+            `;
+        }
+
+        function renderLoginEstudiante() {
+            return `
+                <form id="loginEstForm" class="space-y-5 fade-in">
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">📧 Correo Institucional *</label>
+                        <input type="email" name="email" required pattern=".+@est\.uepdc\.edu\.ec$" class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg" style="border-color: #60a5fa;" placeholder="nombre@est.uepdc.edu.ec">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">🔒 Contraseña *</label>
+                        <input type="password" name="password" required class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg" style="border-color: #60a5fa;" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                        <span>🚀 Iniciar Sesión</span>
+                    </button>
+                </form>
+            `;
+        }
+
+        function renderRegistroEstudiante() {
+            return `
+                <form id="registroEstForm" class="space-y-4 fade-in max-h-[70vh] overflow-y-auto pr-2">
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">👤 Nombre Completo *</label>
+                        <input type="text" name="nombre" required minlength="5" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="Ej: Juan Andrés Pérez Gómez">
+                    </div>
+                    
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">📧 Correo Institucional *</label>
+                        <input type="email" name="email" required pattern=".+@est\.uepdc\.edu\.ec$" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="nombre@est.uepdc.edu.ec">
+                    </div>
+                    
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">🆔 Cédula *</label>
+                        <input type="text" name="cedula" required pattern="[0-9]{10}" maxlength="10" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="0123456789">
+                    </div>
+                    
+                    <div class="border-t-2 border-gray-200 pt-4">
+                        <h3 class="font-black text-lg mb-3" style="color: #1e3a8a;">📚 Información Académica</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">🎓 Nivel Educativo *</label>
+                            <select name="nivel" id="nivelSelect" required class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none select-modern" style="border-color: #60a5fa;">
+                                <option value="">Selecciona tu nivel</option>
+                                <option value="Inicial">👶 Inicial</option>
+                                <option value="Escuela">📖 Escuela (1ro - 7mo EGB)</option>
+                                <option value="Básica Superior">📚 Básica Superior (8vo - 10mo EGB)</option>
+                                <option value="Bachillerato">🎓 Bachillerato (1ro - 3ro BGU)</option>
+                            </select>
+                        </div>
+                        
+                        <div id="gradoContainer" class="mb-4" style="display: none;">
+                            <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">📝 Curso *</label>
+                            <select name="grado" id="gradoSelect" required class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none select-modern" style="border-color: #60a5fa;">
+                                <option value="">Primero selecciona el nivel</option>
+                            </select>
+                        </div>
+                        
+                        <div id="paraleloContainer" class="mb-4" style="display: none;">
+                            <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">📋 Paralelo *</label>
+                            <select name="paralelo" id="paraleloSelect" required class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none select-modern" style="border-color: #60a5fa;">
+                                <option value="">Primero selecciona el curso</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t-2 border-gray-200 pt-4">
+                        <h3 class="font-black text-lg mb-3" style="color: #1e3a8a;">🔒 Seguridad</h3>
+                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">Contraseña *</label>
+                        <input type="password" name="password" required minlength="6" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    
+                    <button type="submit" class="w-full text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all btn-modern sticky bottom-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                        <span>✨ Crear Cuenta</span>
+                    </button>
+                </form>
+            `;
+        }
+
+        function renderFormDECE() {
+            return `
+                <form id="loginDECEForm" class="space-y-5 fade-in">
+                    <div class="border-l-4 p-5 rounded-xl mb-5" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color: #f59e0b;">
+                        <p class="text-sm font-semibold" style="color: #92400e;">
+                            <strong class="block mb-2 text-lg">🔐 Credenciales DECE:</strong>
+                            📧 deceuepdcdece@uepdc.edu.ec<br>
+                            🔑 geraldmontoya
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #92400e;">📧 Correo</label>
+                        <input type="email" name="email" required class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #fbbf24;" placeholder="deceuepdcdece@uepdc.edu.ec">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #92400e;">🔒 Contraseña</label>
+                        <input type="password" name="password" required class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #fbbf24;" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
+                        <span>🚀 Acceder</span>
+                    </button>
+                    <button type="button" id="btnVolverLogin" class="w-full py-3 rounded-xl font-bold transition-all" style="background: #e5e7eb; color: #374151;">
+                        ← Volver
+                    </button>
+                </form>
+            `;
+        }
+
+
+        
+        function renderFormProfesor() {
+            return `
+                <form id="loginProfesorForm" class="space-y-5 fade-in">
+                    <div class="border-l-4 p-5 rounded-xl mb-5" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-color: #10b981;">
+                        <p class="text-sm font-semibold" style="color: #065f46;">
+                            <strong class="block mb-2 text-lg">👨‍🏫 Acceso para Profesores</strong>
+                            Ingresa tu correo institucional para acceder al panel de profesores.
+                            <br><br>
+                            📧 Extensión válida: <strong>@uepdc.edu.ec</strong>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-2 text-sm" style="color: #065f46;">📧 Correo Institucional</label>
+                        <input type="email" name="email" required pattern=".+@uepdc\\.edu\\.ec$" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #34d399;" placeholder="profesor@uepdc.edu.ec">
+                        <p class="text-xs mt-2" style="color: #065f46;">⚠️ Solo correos @uepdc.edu.ec (NO @est.uepdc.edu.ec)</p>
+                    </div>
+                    <button type="submit" class="w-full text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                        <span>🚀 Acceder al Panel de Profesores</span>
+                    </button>
+                    <button type="button" id="btnVolverLoginProf" class="w-full py-3 rounded-xl font-bold transition-all" style="background: #e5e7eb; color: #374151;">
+                        ← Volver
+                    </button>
+                </form>
+            `;
+        }
+            function renderEstudiante() {
+            const miTurnoId = localStorage.getItem('miTurnoId');
+            const tieneTurnoActivo = miTurnoId && state.turnos.find(t => 
+                t.id === parseInt(miTurnoId) && 
+                (t.estado === 'pendiente' || t.estado === 'aceptado')
+            );
+            
+            return `
+                <div class="p-4 fade-in">
+                    <div class="max-w-5xl mx-auto">
+                        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6 slide-in-left">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+                                        ${state.usuarioActual.nombre.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h1 class="text-3xl font-bold" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                            Panel Estudiante
+                                        </h1>
+                                        <p class="text-gray-600 text-lg"><span class="font-bold" style="color: #1e40af;">${state.usuarioActual.nombre}</span> • ${state.usuarioActual.curso}</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    ${tieneTurnoActivo && !state.miTurno ? `
+                                        <button onclick="verMiTurno()" class="gradient-bg text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all btn-modern font-bold">
+                                            <span>🎫 Ver mi turno</span>
+                                        </button>
+                                    ` : ''}
+                                    <button onclick="cerrarSesion()" class="bg-red-500 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold">
+                                        <span>🚪 Salir</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="miTurnoContainer">
+                            ${state.miTurno ? renderMiTurnoContent() : renderSolicitudTurno()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSolicitudTurno() {
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 slide-in-right">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="text-4xl">📡</span> Estado del DECE
+                    </h2>
+                    <div id="estadoDECE">
+                        <div class="${state.estadoDECE.disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} p-10 rounded-2xl text-center text-white shadow-xl">
+                            <div class="text-7xl mb-4">${state.estadoDECE.disponible ? '✅' : '❌'}</div>
+                            <div class="text-4xl font-black mb-3">
+                                ${state.estadoDECE.disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
+                            </div>
+                            <p class="text-xl opacity-90">${state.estadoDECE.disponible ? '¡Puedes solicitar un turno ahora!' : 'El DECE no está recibiendo solicitudes'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-2xl p-8 scale-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="text-4xl">📝</span> Solicitar Turno
+                    </h2>
+                    <form id="formTurno" class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-2">👤 Nombre</label>
+                                <input type="text" name="nombre" value="${state.usuarioActual.nombre}" readonly class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl bg-gray-50 text-lg">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-2">🆔 Cédula</label>
+                                <input type="text" name="cedula" value="${state.usuarioActual.cedula}" readonly class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl bg-gray-50 text-lg">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-2">📚 Curso</label>
+                                <input type="text" name="curso" value="${state.usuarioActual.curso}" readonly class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl bg-gray-50 text-lg">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-2">📋 Motivo *</label>
+                                <select name="motivo" required class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg select-modern" style="border-color: #60a5fa;">
+                                    <option value="">Seleccione un motivo</option>
+                                    <option value="Apoyo Académico">📖 Apoyo Académico</option>
+                                    <option value="Orientación Personal">💭 Orientación Personal</option>
+                                    <option value="Dificultades Familiares">👨‍👩‍👧‍👦 Dificultades Familiares</option>
+                                    <option value="Problemas de Comportamiento">⚠️ Problemas de Comportamiento</option>
+                                    <option value="Orientación Vocacional">🎯 Orientación Vocacional</option>
+                                    <option value="Situación de Riesgo">🚨 Situación de Riesgo</option>
+                                    <option value="Problemas de Salud Mental">🧠 Problemas de Salud Mental</option>
+                                    <option value="Acoso Escolar (Bullying)">🛡️ Acoso Escolar</option>
+                                    <option value="Otros">📝 Otros</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-2">💬 Describe tu situación *</label>
+                            <textarea name="situacion" rows="4" required class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #60a5fa;" placeholder="Por favor describe tu situación con detalle..."></textarea>
+                        </div>
+                        <button type="submit" ${!state.estadoDECE.disponible ? 'disabled' : ''} class="w-full gradient-bg text-white py-5 rounded-xl font-black text-xl hover:shadow-2xl transition-all disabled:bg-gray-400 disabled:cursor-not-allowed btn-modern">
+                            <span>✨ Solicitar Turno</span>
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function renderMiTurnoContent() {
+            const turno = state.miTurno;
+            
+            let estaEnProceso = false;
+            if (turno.hora_atencion_programada) {
+                const horaInicio = HoraUtils.extraerHoraInicio(turno.hora_atencion_programada);
+                if (horaInicio) {
+                    estaEnProceso = HoraUtils.citaEnProceso(horaInicio);
+                }
+            }
+            
+            const turnosEnCola = state.turnos.filter(t => 
+                (t.estado === 'pendiente' || t.estado === 'aceptado')
+            ).sort((a, b) => a.numero_turno - b.numero_turno);
+            
+            const miPosicion = turnosEnCola.findIndex(t => t.id === turno.id) + 1;
+            const totalEnCola = turnosEnCola.length;
+            
+            const turnosAceptadosAntes = state.turnos.filter(t => 
+                t.estado === 'aceptado' && 
+                t.numero_turno < turno.numero_turno
+            ).length;
+            
+            return `
+                ${(turno.estado === 'pendiente' || turno.estado === 'aceptado') ? `
+                    <div class="gradient-bg text-white rounded-2xl p-10 text-center mb-6 shadow-2xl">
+                        <div class="text-xl mb-3 font-semibold">📊 Tu posición en la fila</div>
+                        <div class="text-8xl font-black my-6">#${miPosicion}</div>
+                        <div class="text-2xl mb-4 font-bold">de ${totalEnCola} persona${totalEnCola !== 1 ? 's' : ''} esperando</div>
+                        <div class="border-t-2 border-white/30 pt-6 mt-6 space-y-2">
+                            <div class="text-lg">📅 ${new Date(turno.created_at).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                            <div class="text-lg">⏰ ${new Date(turno.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div class="text-lg mt-4">👤 ${turno.nombre}</div>
+                            <div class="text-lg">📚 ${turno.curso}</div>
+                            <div class="text-lg mt-2">📋 ${turno.motivo}</div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="gradient-bg text-white rounded-2xl p-10 text-center mb-6 shadow-2xl">
+                        <div class="text-xl mb-3 font-semibold">Tu número de turno</div>
+                        <div class="text-8xl font-black my-6">#${turno.numero_turno}</div>
+                        <div class="text-xl">📅 ${new Date(turno.created_at).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        <div class="text-xl mt-2">⏰ ${new Date(turno.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div class="border-t-2 border-white/30 pt-6 mt-6 space-y-2">
+                            <div class="text-xl">👤 ${turno.nombre}</div>
+                            <div class="text-xl">📚 ${turno.curso}</div>
+                            <div class="text-xl mt-2">📋 ${turno.motivo}</div>
+                        </div>
+                    </div>
+                `}
+                
+                ${estaEnProceso ? `
+                    <div class="badge-en-proceso text-white p-8 rounded-2xl mb-6 text-center shadow-xl">
+                        <div class="text-5xl mb-3">🔄</div>
+                        <div class="font-black text-3xl mb-3">¡CITA EN PROCESO!</div>
+                        <div class="text-xl font-semibold">El DECE te está atendiendo ahora</div>
+                        ${turno.hora_atencion_programada ? `
+                            <div class="mt-4 text-2xl font-black">🕐 ${turno.hora_atencion_programada}</div>
+                        ` : ''}
+                    </div>
+                ` : turno.estado === 'aceptado' && turnosAceptadosAntes === 0 ? `
+                    <div class="bg-gradient-to-r from-green-400 to-green-500 text-white p-8 rounded-2xl mb-6 text-center shadow-xl">
+                        <div class="text-5xl mb-3">🎉</div>
+                        <div class="font-black text-3xl mb-3">¡ES TU TURNO!</div>
+                        <div class="text-xl font-semibold">Dirígete al DECE ahora</div>
+                        ${turno.hora_atencion_programada ? `
+                            <div class="mt-4 text-2xl font-black">🕐 ${turno.hora_atencion_programada}</div>
+                        ` : ''}
+                    </div>
+                ` : turno.estado === 'aceptado' && turno.hora_atencion_programada ? `
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 border-4 border-green-500 p-6 rounded-2xl mb-6 text-center">
+                        <div class="text-green-800 font-bold text-2xl mb-3">🕐 Hora programada</div>
+                        <div class="text-green-700 text-5xl font-black mt-3 mb-4">${turno.hora_atencion_programada}</div>
+                        ${turnosAceptadosAntes > 0 ? `
+                            <div class="mt-4 text-green-700 text-lg font-semibold">
+                                ⏰ ${turnosAceptadosAntes} persona${turnosAceptadosAntes !== 1 ? 's' : ''} antes que tú
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                
+                ${renderEstadoTurnoDetallado(turno)}
+                
+                <div class="mt-6 space-y-3">
+                    ${turno.estado === 'atendido' ? `
+                        <button onclick="volverInicio()" class="w-full gradient-bg text-white py-5 rounded-xl hover:shadow-2xl transition-all font-bold text-xl btn-modern">
+                            <span>✅ Finalizar - Solicitar Nuevo Turno</span>
+                        </button>
+                    ` : turno.estado === 'rechazado' ? `
+                        <button onclick="volverInicio()" class="w-full gradient-bg text-white py-5 rounded-xl hover:shadow-2xl transition-all font-bold text-xl btn-modern">
+                            <span>📝 Solicitar Nuevo Turno</span>
+                        </button>
+                    ` : `
+                        <button onclick="cerrarMiTurno()" class="w-full bg-gray-600 text-white py-4 rounded-xl hover:bg-gray-700 hover:shadow-xl transition-all font-bold text-lg">
+                            ⬅️ Ocultar turno
+                        </button>
+                    `}
+                </div>
+            `;
+        }
+
+        function renderEstadoTurnoDetallado(turno) {
+            const estados = {
+                pendiente: {
+                    icon: '⏳',
+                    titulo: '🟡 PENDIENTE DE REVISIÓN',
+                    mensaje: 'Tu solicitud está siendo revisada por el DECE. Pronto recibirás una respuesta.',
+                    bg: 'from-yellow-400 to-yellow-500',
+                    textColor: 'text-yellow-900'
+                },
+                aceptado: {
+                    icon: '✅',
+                    titulo: '🟢 TURNO ACEPTADO',
+                    mensaje: 'Tu turno ha sido aceptado. Espera tu llamado para ser atendido.',
+                    bg: 'from-green-400 to-green-500',
+                    textColor: 'text-green-900'
+                },
+                rechazado: {
+                    icon: '❌',
+                    titulo: '🔴 TURNO RECHAZADO',
+                    mensaje: 'Tu solicitud no pudo ser aceptada. Revisa el motivo a continuación.',
+                    bg: 'from-red-400 to-red-500',
+                    textColor: 'text-red-900'
+                },
+                atendido: {
+                    icon: '✔️',
+                    titulo: '🔵 TURNO COMPLETADO',
+                    mensaje: 'Tu consulta ha sido atendida exitosamente. Gracias por usar el sistema.',
+                    bg: 'from-blue-400 to-blue-500',
+                    textColor: 'text-blue-900'
+                }
+            };
+            
+            const estado = estados[turno.estado];
+            
+            return `
+                <div class="bg-gradient-to-r ${estado.bg} text-white p-8 rounded-2xl shadow-xl">
+                    <div class="flex items-start gap-6">
+                        <div class="text-6xl">${estado.icon}</div>
+                        <div class="flex-1">
+                            <div class="font-black text-2xl mb-4">${estado.titulo}</div>
+                            <div class="text-lg leading-relaxed opacity-95">${estado.mensaje}</div>
+                            
+                            ${turno.estado === 'rechazado' && turno.motivo_rechazo ? `
+                                <div class="mt-6 p-5 bg-white rounded-xl shadow-lg">
+                                    <div class="font-bold ${estado.textColor} mb-3 text-xl">📝 Motivo:</div>
+                                    <div class="${estado.textColor} text-lg">${turno.motivo_rechazo}</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${turno.estado === 'atendido' && turno.hora_atencion ? `
+                                <div class="mt-5 pt-5 border-t-2 border-white/30 text-base opacity-90">
+                                    <strong>📅 Atendido:</strong> ${new Date(turno.hora_atencion).toLocaleDateString('es-ES')} ${new Date(turno.hora_atencion).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        
+        function renderProfesor() {
+            // Verificación de seguridad
+            if (!state.usuarioActual) {
+                cerrarSesion();
+                return renderLogin();
+            }
+            
+            return `
+                <div class="p-4 fade-in">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6 slide-in-left">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                        👨‍🏫
+                                    </div>
+                                    <div>
+                                        <h1 class="text-3xl font-bold" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                            Panel de Profesores
+                                        </h1>
+                                        <p class="text-gray-600 text-lg"><span class="font-bold" style="color: #059669;">${state.usuarioActual.nombre}</span></p>
+                                    </div>
+                                </div>
+                                <button onclick="cerrarSesion()" class="bg-red-500 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold">
+                                    <span>🚪 Salir</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${renderEstadoProfesor()}
+                        ${renderEstadisticasProfesor()}
+                        ${renderSolicitudTurnoProfesor()}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderEstadoProfesor() {
+            const disponible = state.estadoDECE.disponible;
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 slide-in-right">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="text-4xl">📡</span> Estado del DECE
+                    </h2>
+                    <div class="${disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} p-10 rounded-2xl text-center text-white shadow-xl">
+                        <div class="text-7xl mb-4">${disponible ? '✅' : '❌'}</div>
+                        <div class="text-4xl font-black mb-3">
+                            ${disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
+                        </div>
+                        <p class="text-xl opacity-90">${disponible ? 'Puedes solicitar turnos para tus estudiantes' : 'El DECE no está recibiendo solicitudes'}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderEstadisticasProfesor() {
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 scale-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="text-4xl">📊</span> Estadísticas del DECE
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-2xl text-center border-2 border-yellow-300 card-hover">
+                            <div class="text-3xl font-black text-yellow-700 mb-1">${state.estadisticas.pendientes}</div>
+                            <div class="text-xs text-yellow-600 font-semibold">⏳ Pendientes</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-2xl text-center border-2 border-green-300 card-hover">
+                            <div class="text-3xl font-black text-green-700 mb-1">${state.estadisticas.aceptados}</div>
+                            <div class="text-xs text-green-600 font-semibold">✅ Aceptados</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl text-center border-2 border-orange-300 card-hover">
+                            <div class="text-3xl font-black text-orange-700 mb-1">${state.estadisticas.enProceso}</div>
+                            <div class="text-xs text-orange-600 font-semibold">🔄 En proceso</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl text-center border-2 border-blue-300 card-hover">
+                            <div class="text-3xl font-black text-blue-700 mb-1">${state.estadisticas.atendidos}</div>
+                            <div class="text-xs text-blue-600 font-semibold">✔️ Completados</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderSolicitudTurnoProfesor() {
+            const cursos = ordenarCursosCorrectamente(Object.keys(ESTUDIANTES_BD));
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-8 scale-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <span class="text-4xl">📝</span> Solicitar Turno para Estudiante
+                    </h2>
+                    <form id="formTurnoProfesor" class="space-y-6">
+                        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-300">
+                            <h3 class="font-bold text-xl mb-4 text-blue-900">🔍 Buscar Estudiante</h3>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-gray-700 mb-2">📚 Seleccionar Curso</label>
+                                    <select id="cursoSelect" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-base select-modern" style="border-color: #60a5fa;">
+                                        <option value="">-- Selecciona un curso --</option>
+                                        ${cursos.map(curso => `<option value="${curso}">${curso}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 mb-2">👤 Seleccionar Estudiante</label>
+                                    <select id="estudianteSelect" disabled class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-base select-modern bg-gray-100">
+                                        <option value="">Primero selecciona un curso</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="estudianteInfo" class="mt-4 hidden">
+                                <div class="bg-white p-4 rounded-xl shadow-inner">
+                                    <p class="font-bold text-green-700">✅ Estudiante seleccionado:</p>
+                                    <p class="mt-2"><strong>Nombre:</strong> <span id="infoNombre"></span></p>
+                                    <p><strong>Email:</strong> <span id="infoEmail"></span></p>
+                                    <p><strong>Curso:</strong> <span id="infoCurso"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-2">📋 Motivo *</label>
+                            <select name="motivo" required class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg select-modern" style="border-color: #60a5fa;">
+                                <option value="">Seleccione un motivo</option>
+                                <option value="Apoyo Académico">📖 Apoyo Académico</option>
+                                <option value="Orientación Personal">💭 Orientación Personal</option>
+                                <option value="Dificultades Familiares">👨‍👩‍👧‍👦 Dificultades Familiares</option>
+                                <option value="Problemas de Comportamiento">⚠️ Problemas de Comportamiento</option>
+                                <option value="Orientación Vocacional">🎯 Orientación Vocacional</option>
+                                <option value="Situación de Riesgo">🚨 Situación de Riesgo</option>
+                                <option value="Problemas de Salud Mental">🧠 Problemas de Salud Mental</option>
+                                <option value="Acoso Escolar (Bullying)">🛡️ Acoso Escolar</option>
+                                <option value="Otros">📝 Otros</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block font-bold text-gray-700 mb-2">💬 Describe la situación (Opcional)</label>
+                            <textarea name="situacion" rows="4" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #60a5fa;" placeholder="Describe la situación del estudiante y por qué necesita atención del DECE... (Este campo es opcional para respetar la privacidad del estudiante)"></textarea>
+                        </div>
+                        
+                        <button type="submit" ${!state.estadoDECE.disponible ? 'disabled' : ''} class="w-full text-white py-5 rounded-xl font-black text-xl hover:shadow-2xl transition-all disabled:bg-gray-400 disabled:cursor-not-allowed btn-modern" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                            <span>✨ Solicitar Turno</span>
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+        
+        function renderDECE() {
+            return `
+                <div class="p-4 fade-in">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-6 mb-4 md:mb-6 slide-in-left">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <div>
+                                    <h1 class="text-2xl md:text-4xl font-bold mb-2" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                        👨‍⚕️ Panel DECE
+                                    </h1>
+                                    <p class="text-gray-600 text-sm md:text-lg">Gestión de Turnos - <span class="font-bold">${HoraUtils.getHoraEcuador().toLocaleDateString('es-ES')}</span></p>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button onclick="refrescarManual()" class="gradient-bg-3 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all btn-modern font-bold text-sm md:text-base">
+                                        <span>🔄 Refrescar</span>
+                                    </button>
+                                    <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold text-sm md:text-base">
+                                        <span>🚪 Salir</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${renderControlDisponibilidad()}
+                        ${renderEstadisticas()}
+                        ${renderListaTurnosDECE()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderControlDisponibilidad() {
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-8 mb-4 md:mb-6 slide-in-right">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-3">
+                        <span class="text-3xl md:text-4xl">⚙️</span> Control
+                    </h2>
+                    <div class="grid md:grid-cols-2 gap-4 md:gap-6">
+                        <div class="${state.estadoDECE.disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} control-disponible-card rounded-2xl text-center text-white shadow-xl card-hover">
+                            <div class="control-disponible-icon mb-2 md:mb-4">${state.estadoDECE.disponible ? '✅' : '❌'}</div>
+                            <div class="control-disponible-title font-black mb-2 md:mb-4">
+                                ${state.estadoDECE.disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
+                            </div>
+                            <p class="control-disponible-text mb-4 md:mb-6 opacity-90">${state.estadoDECE.disponible ? 'El sistema está aceptando turnos' : 'El sistema está pausado'}</p>
+                            <button id="btnDisponibilidad" onclick="cambiarDisponibilidad()" class="${state.estadoDECE.disponible ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} control-disponible-btn text-white rounded-xl font-bold transition-all shadow-lg btn-modern">
+                                <span>${state.estadoDECE.disponible ? '⏸️ Pausar Sistema' : '▶️ Activar Sistema'}</span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                <div class="control-stats-number font-black">${state.estadisticas.pendientes}</div>
+                                <div class="control-stats-label font-semibold opacity-90">⏳ Pendientes</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-400 to-green-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                <div class="control-stats-number font-black">${state.estadisticas.aceptados}</div>
+                                <div class="control-stats-label font-semibold opacity-90">✅ Aceptados</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-orange-400 to-orange-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                <div class="control-stats-number font-black">${state.estadisticas.enProceso}</div>
+                                <div class="control-stats-label font-semibold opacity-90">🔄 En proceso</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-blue-400 to-blue-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                <div class="control-stats-number font-black">${state.estadisticas.atendidos}</div>
+                                <div class="control-stats-label font-semibold opacity-90">✔️ Atendidos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEstadisticas() {
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-8 mb-4 md:mb-6 scale-in">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-3">
+                        <span class="text-3xl md:text-4xl">📊</span> Estadísticas
+                    </h2>
+                    <div id="estadisticas">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-5 rounded-2xl text-center border-2 border-gray-300 card-hover">
+                                <div class="text-3xl font-black text-gray-700 mb-1">${state.estadisticas.totalHoy}</div>
+                                <div class="text-xs text-gray-600 font-semibold">📋 Total hoy</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-2xl text-center border-2 border-yellow-300 card-hover">
+                                <div class="text-3xl font-black text-yellow-700 mb-1">${state.turnos.filter(t => t.estado === 'pendiente' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
+                                <div class="text-xs text-yellow-600 font-semibold">⏳ Pendientes</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl text-center border-2 border-orange-300 card-hover">
+                                <div class="text-3xl font-black text-orange-700 mb-1">${state.estadisticas.enProceso}</div>
+                                <div class="text-xs text-orange-600 font-semibold">🔄 En proceso</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl text-center border-2 border-blue-300 card-hover">
+                                <div class="text-3xl font-black text-blue-700 mb-1">${state.turnos.filter(t => t.estado === 'atendido' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
+                                <div class="text-xs text-blue-600 font-semibold">✔️ Completados</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-red-50 to-red-100 p-5 rounded-2xl text-center border-2 border-red-300 card-hover">
+                                <div class="text-3xl font-black text-red-700 mb-1">${state.estadisticas.no_asistio}</div>
+                                <div class="text-xs text-red-600 font-semibold">🚫 No asistió</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderListaTurnosDECE() {
+            const turnosFiltrados = filtrarYBuscarTurnos();
+            
+            return `
+                <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-8 scale-in">
+                    <div class="flex justify-between items-center mb-4 md:mb-6 flex-wrap gap-4">
+                        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+                            <span class="text-3xl md:text-4xl">📋</span> Turnos
+                        </h2>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="filtrarTurnos('todos')" class="${state.filtroTurnos === 'todos' ? 'gradient-bg text-white' : 'bg-gray-200 text-gray-700'} px-3 md:px-4 py-2 rounded-lg font-bold text-xs md:text-sm">
+                                Todos (${state.turnos.length})
+                            </button>
+                            <button onclick="filtrarTurnos('pendiente')" class="${state.filtroTurnos === 'pendiente' ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'} px-3 md:px-4 py-2 rounded-lg font-bold text-xs md:text-sm">
+                                ⏳ Pendientes (${state.estadisticas.pendientes})
+                            </button>
+                            <button onclick="filtrarTurnos('aceptado')" class="${state.filtroTurnos === 'aceptado' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'} px-3 md:px-4 py-2 rounded-lg font-bold text-xs md:text-sm">
+                                ✅ Aceptados (${state.estadisticas.aceptados})
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="listaTurnos">
+                        ${turnosFiltrados.length === 0 ? renderSinTurnos() : `
+                            <div class="space-y-4">
+                                ${turnosFiltrados.map(turno => renderTurnoCard(turno)).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSinTurnos() {
+            return `
+                <div class="text-center py-16 text-gray-500">
+                    <div class="text-7xl mb-6 opacity-50">📋</div>
+                    <div class="text-2xl font-bold mb-2">No hay turnos</div>
+                    <p class="text-lg">Los turnos aparecerán aquí cuando se soliciten</p>
+                </div>
+            `;
+        }
+
+        function renderTurnoCard(turno) {
+            let estaEnProceso = false;
+            if (turno.estado === 'aceptado' && turno.hora_atencion_programada) {
+                const horaInicio = HoraUtils.extraerHoraInicio(turno.hora_atencion_programada);
+                if (horaInicio) {
+                    estaEnProceso = HoraUtils.citaEnProceso(horaInicio);
+                }
+            }
+            
+            const colores = {
+                pendiente: { 
+                    bg: 'from-yellow-50 to-yellow-100', 
+                    border: 'border-yellow-500', 
+                    badge: 'bg-yellow-500 text-white',
+                    icon: '⏳'
+                },
+                aceptado: { 
+                    bg: 'from-green-50 to-green-100', 
+                    border: 'border-green-500', 
+                    badge: estaEnProceso ? 'badge-en-proceso text-white' : 'bg-green-500 text-white',
+                    icon: estaEnProceso ? '🔄' : '✅'
+                },
+                rechazado: { 
+                    bg: 'from-red-50 to-red-100', 
+                    border: 'border-red-500', 
+                    badge: 'bg-red-500 text-white',
+                    icon: '❌'
+                },
+                atendido: { 
+                    bg: 'from-blue-50 to-blue-100', 
+                    border: 'border-blue-500', 
+                    badge: 'bg-blue-500 text-white',
+                    icon: '✔️'
+                },
+                no_asistio: { 
+                    bg: 'from-gray-50 to-gray-100', 
+                    border: 'border-gray-500', 
+                    badge: 'bg-gray-500 text-white',
+                    icon: '🚫'
+                }
+            };
+            const c = colores[turno.estado] || colores.pendiente;
+
+            return `
+                <div class="bg-gradient-to-r ${c.bg} border-l-4 ${c.border} p-4 md:p-6 rounded-2xl shadow-lg card-hover">
+                    <div class="flex justify-between items-start flex-wrap gap-4 mb-4">
+                        <div class="flex items-center gap-3 md:gap-4">
+                            <div class="gradient-bg text-white w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center font-black text-lg md:text-2xl shadow-lg">
+                                #${turno.numero_turno}
+                            </div>
+                            <div>
+                                <div class="font-black text-base md:text-xl text-gray-800">${turno.nombre}</div>
+                                <div class="text-xs md:text-sm text-gray-600 font-semibold mt-1">🆔 ${turno.cedula} • 📚 ${turno.curso}</div>
+                                <div class="text-xs md:text-sm text-gray-600 font-semibold">📧 ${turno.email_estudiante || 'No registrado'}</div>
+                            </div>
+                        </div>
+                        <span class="${c.badge} px-3 md:px-4 py-1 md:py-2 rounded-xl text-xs md:text-sm font-black flex items-center gap-2 shadow-md">
+                            ${c.icon} ${estaEnProceso ? 'EN PROCESO' : turno.estado.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-3 text-xs md:text-sm mb-4">
+                        <div class="bg-white p-3 rounded-lg">
+                            <span class="font-bold text-gray-700">📋 Motivo:</span> 
+                            <span class="text-gray-600">${turno.motivo}</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg">
+                            <span class="font-bold text-gray-700">📅 Fecha:</span> 
+                            <span class="text-gray-600">${new Date(turno.created_at).toLocaleDateString('es-ES')} ${new Date(turno.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        ${turno.hora_atencion_programada ? `
+                            <div class="bg-white p-3 rounded-lg md:col-span-2">
+                                <span class="font-bold text-green-700">🕐 Hora programada:</span> 
+                                <span class="text-green-600 font-black text-base md:text-lg">${turno.hora_atencion_programada}</span>
+                                ${estaEnProceso ? '<span class="ml-2 badge-en-proceso px-2 md:px-3 py-1 rounded-full text-xs">⚡ AHORA</span>' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${turno.situacion ? `
+                        <div class="bg-white p-3 md:p-4 rounded-lg mb-4">
+                            <span class="font-bold text-gray-700 block mb-2 text-xs md:text-sm">💬 Situación:</span>
+                            <p class="text-gray-600 text-xs md:text-sm">${turno.situacion}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${turno.motivo_rechazo ? `
+                        <div class="bg-white p-3 md:p-4 rounded-lg mb-4 border-l-4 border-red-500">
+                            <span class="font-bold text-red-700 block mb-2 text-xs md:text-sm">📝 Motivo de rechazo:</span>
+                            <p class="text-red-600 text-xs md:text-sm">${turno.motivo_rechazo}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${turno.nota_dece ? `
+                        <div class="p-3 md:p-4 rounded-lg mb-4 border-l-4" style="background: #dbeafe; border-color: #3b82f6;">
+                            <span class="font-bold block mb-2 text-xs md:text-sm" style="color: #1e40af;">📌 Nota DECE:</span>
+                            <p class="text-xs md:text-sm" style="color: #1e40af;">${turno.nota_dece}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex gap-2 flex-wrap">
+                        ${renderBotonesTurno(turno)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBotonesTurno(turno) {
+            let botones = '';
+            
+            if (turno.estado === 'pendiente') {
+                botones = `
+                    <button onclick="aceptarTurnoConHora(${turno.id})" class="gradient-bg text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold btn-modern text-xs md:text-sm">
+                        <span>✅ Aceptar y Programar</span>
+                    </button>
+                    <button onclick="rechazarTurno(${turno.id})" class="bg-red-500 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all font-bold btn-modern text-xs md:text-sm">
+                        <span>🚫 No disponible</span>
+                    </button>
+                `;
+            }
+            
+            if (turno.estado === 'aceptado') {
+                botones = `
+                    <button onclick="marcarAtendido(${turno.id})" class="gradient-bg-3 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold btn-modern text-xs md:text-sm">
+                        <span>✔️ Marcar Atendido</span>
+                    </button>
+                    <button onclick="marcarNoAsistio(${turno.id})" class="bg-orange-600 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl hover:bg-orange-700 transition-all font-bold btn-modern text-xs md:text-sm">
+                        <span>🚫 No Asistió</span>
+                    </button>
+                    ${turno.hora_atencion_programada ? `
+                        <button onclick="editarHora(${turno.id}, '${turno.hora_atencion_programada}')" class="gradient-bg-2 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold btn-modern text-xs md:text-sm">
+                            <span>🕐 Cambiar Hora</span>
+                        </button>
+                    ` : ''}
+                `;
+            }
+            
+            botones += `
+                <button onclick="agregarNotaDECE(${turno.id})" class="text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold text-xs md:text-sm" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+                    📌 ${turno.nota_dece ? 'Editar' : 'Agregar'} Nota
+                </button>
+            `;
+            
+            return botones;
+        }
+
+        // EVENT HANDLERS Y FUNCIONES GLOBALES
+        function attachLoginEvents() {
+            const btnEstudiante = document.getElementById('btnEstudiante');
+            const btnProfesor = document.getElementById('btnProfesor');
+            const btnDECE = document.getElementById('btnDECE');
+            const formContainer = document.getElementById('formContainer');
+
+            btnEstudiante.addEventListener('click', () => {
+                formContainer.innerHTML = renderFormEstudiante();
+                attachFormEstudianteEvents();
+            });
+
+            btnProfesor.addEventListener('click', () => {
+                formContainer.innerHTML = renderFormProfesor();
+                attachFormProfesorEvents();
+            });
+
+            btnDECE.addEventListener('click', () => {
+                formContainer.innerHTML = renderFormDECE();
+                attachFormDECEEvents();
+            });
+        }
+
+        function attachFormEstudianteEvents() {
+            const btnLoginEst = document.getElementById('btnLoginEst');
+            const btnRegistroEst = document.getElementById('btnRegistroEst');
+            const formEstudiante = document.getElementById('formEstudiante');
+
+            btnLoginEst.addEventListener('click', () => {
+                btnLoginEst.classList.add('border-b-4', 'border-blue-800', 'text-blue-800');
+                btnRegistroEst.classList.remove('border-b-4', 'border-blue-800', 'text-blue-800');
+                formEstudiante.innerHTML = renderLoginEstudiante();
+                
+                document.getElementById('loginEstForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const email = formData.get('email');
+                    const password = formData.get('password');
+                    
+                    const resultado = await loginEstudiante(email, password);
+                    if (!resultado) {
+                        showNotification('Credenciales incorrectas', 'error');
+                    }
+                });
+            });
+
+            btnRegistroEst.addEventListener('click', () => {
+                btnRegistroEst.classList.add('border-b-4', 'border-blue-800', 'text-blue-800');
+                btnLoginEst.classList.remove('border-b-4', 'border-blue-800', 'text-blue-800');
+                formEstudiante.innerHTML = renderRegistroEstudiante();
+                
+                // Obtener elementos
+                const nivelSelect = document.getElementById('nivelSelect');
+                const gradoContainer = document.getElementById('gradoContainer');
+                const gradoSelect = document.getElementById('gradoSelect');
+                const paraleloContainer = document.getElementById('paraleloContainer');
+                const paraleloSelect = document.getElementById('paraleloSelect');
+                
+                // Evento: Cambio de nivel
+                nivelSelect.addEventListener('change', (e) => {
+                    const nivel = e.target.value;
+                    
+                    // Resetear campos
+                    gradoSelect.innerHTML = '<option value="">Selecciona tu curso</option>';
+                    paraleloSelect.innerHTML = '<option value="">Primero selecciona el curso</option>';
+                    paraleloContainer.style.display = 'none';
+                    
+                    if (!nivel) {
+                        gradoContainer.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Mostrar contenedor de grado
+                    gradoContainer.style.display = 'block';
+                    
+                    // Cargar cursos disponibles para el nivel seleccionado EN ORDEN
+                    const nivelData = CURSOS_PARALELOS[nivel];
+                    if (nivelData && nivelData.cursos) {
+                        // Usar el array ordenado de cursos
+                        nivelData.cursos.forEach(curso => {
+                            const option = document.createElement('option');
+                            option.value = curso;
+                            option.textContent = curso;
+                            gradoSelect.appendChild(option);
+                        });
+                    }
+                });
+                
+                // Evento: Cambio de grado/curso
+                gradoSelect.addEventListener('change', (e) => {
+                    const nivel = nivelSelect.value;
+                    const curso = e.target.value;
+                    
+                    // Resetear paralelos
+                    paraleloSelect.innerHTML = '<option value="">Selecciona tu paralelo</option>';
+                    
+                    if (!curso || !nivel) {
+                        paraleloContainer.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Mostrar contenedor de paralelo
+                    paraleloContainer.style.display = 'block';
+                    
+                    // Cargar paralelos disponibles para el curso seleccionado
+                    const nivelData = CURSOS_PARALELOS[nivel];
+                    const paralelosDisponibles = nivelData.paralelos[curso];
+                    if (paralelosDisponibles && paralelosDisponibles.length > 0) {
+                        paralelosDisponibles.forEach(paralelo => {
+                            const option = document.createElement('option');
+                            option.value = paralelo;
+                            option.textContent = `Paralelo ${paralelo}`;
+                            paraleloSelect.appendChild(option);
+                        });
+                    }
+                });
+                
+                // Evento: Submit del formulario
+                document.getElementById('registroEstForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    
+                    const nivel = formData.get('nivel');
+                    const grado = formData.get('grado');
+                    const paralelo = formData.get('paralelo');
+                    
+                    // Construir el nombre completo del curso
+                    let cursoCompleto = `${grado} ${paralelo}`;
+                    
+                    const datos = {
+                        nombre: formData.get('nombre'),
+                        email: formData.get('email'),
+                        cedula: formData.get('cedula'),
+                        nivel: nivel,
+                        grado: grado,
+                        especialidad: 'N/A',  // Ya no se usa por separado
+                        paralelo: paralelo,
+                        password: formData.get('password')
+                    };
+                    
+                    await registrarEstudiante(datos);
+                });
+            });
+
+            btnLoginEst.click();
+        }
+
+        function attachFormDECEEvents() {
+            document.getElementById('loginDECEForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const email = formData.get('email');
+                const password = formData.get('password');
+                
+                if (!loginDECE(email, password)) {
+                    showNotification('Credenciales incorrectas', 'error');
+                }
+            });
+
+            document.getElementById('btnVolverLogin').addEventListener('click', () => {
+                document.getElementById('formContainer').innerHTML = '';
+            });
+        }
+
+
+        
+        function attachFormProfesorEvents() {
+            document.getElementById('loginProfesorForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const email = formData.get('email');
+                await loginProfesor(email);
+            });
+
+            document.getElementById('btnVolverLoginProf').addEventListener('click', () => {
+                document.getElementById('formContainer').innerHTML = '';
+            });
+        }
+        
+        function attachProfesorEvents() {
+            // Event handler para cambio de curso
+            const cursoSelect = document.getElementById('cursoSelect');
+            const estudianteSelect = document.getElementById('estudianteSelect');
+            const estudianteInfo = document.getElementById('estudianteInfo');
+            
+            cursoSelect.addEventListener('change', (e) => {
+                const curso = e.target.value;
+                estudianteSelect.innerHTML = '<option value="">Selecciona un estudiante</option>';
+                estudianteInfo.classList.add('hidden');
+                
+                if (curso && ESTUDIANTES_BD[curso]) {
+                    estudianteSelect.disabled = false;
+                    estudianteSelect.classList.remove('bg-gray-100');
+                    estudianteSelect.style.borderColor = '#60a5fa';
+                    
+                    ESTUDIANTES_BD[curso].forEach(est => {
+                        const option = document.createElement('option');
+                        option.value = JSON.stringify(est);
+                        option.textContent = est['Nombre completo estudiante'];
+                        estudianteSelect.appendChild(option);
+                    });
+                } else {
+                    estudianteSelect.disabled = true;
+                    estudianteSelect.classList.add('bg-gray-100');
+                }
+            });
+            
+            // Event handler para selección de estudiante
+            estudianteSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    const estudiante = JSON.parse(e.target.value);
+                    const curso = cursoSelect.value;
+                    
+                    document.getElementById('infoNombre').textContent = estudiante['Nombre completo estudiante'];
+                    document.getElementById('infoEmail').textContent = estudiante['Email estudiante'];
+                    document.getElementById('infoCurso').textContent = curso;
+                    estudianteInfo.classList.remove('hidden');
+                } else {
+                    estudianteInfo.classList.add('hidden');
+                }
+            });
+            
+            // Event handler para el formulario
+            document.getElementById('formTurnoProfesor').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const estudianteSelect = document.getElementById('estudianteSelect');
+                if (!estudianteSelect.value) {
+                    showNotification('Debes seleccionar un estudiante', 'error');
+                    return;
+                }
+                
+                const estudiante = JSON.parse(estudianteSelect.value);
+                const curso = document.getElementById('cursoSelect').value;
+                const formData = new FormData(e.target);
+                
+                const turnoData = {
+                    nombre: estudiante['Nombre completo estudiante'],
+                    email_estudiante: estudiante['Email estudiante'],
+                    cedula: 'N/A', // Los profesores no tienen acceso a cédulas
+                    curso: curso,
+                    motivo: formData.get('motivo'),
+                    situacion: formData.get('situacion'),
+                    solicitado_por: 'profesor',
+                    email_profesor: state.usuarioActual.email,
+                    nombre_profesor: state.usuarioActual.nombre
+                };
+                
+                await registrarTurnoProfesor(turnoData);
+            });
+        }
+            function attachEstudianteEvents() {
+            const formTurno = document.getElementById('formTurno');
+            if (formTurno) {
+                formTurno.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    registrarTurno({
+                        nombre: formData.get('nombre'),
+                        cedula: formData.get('cedula'),
+                        curso: formData.get('curso'),
+                        motivo: formData.get('motivo'),
+                        situacion: formData.get('situacion')
+                    });
+                });
+            }
+        }
+
+        // Funciones globales
+        window.cerrarSesion = cerrarSesion;
+        window.cambiarDisponibilidad = cambiarDisponibilidad;
+        window.agregarNotaDECE = agregarNotaDECE;
+        
+        window.refrescarManual = async () => {
+            await cargarDatos();
+            showNotification('Actualizado', 'info');
+        };
+        
+        window.aceptarTurnoConHora = async (id) => {
+            const hora = prompt('🕐 Hora de inicio (ej: 10:00):');
+            if (hora && /^\d{1,2}:\d{2}$/.test(hora)) {
+                const rangoCompleto = HoraUtils.generarRango(hora);
+                await actualizarEstadoTurno(id, 'aceptado', null, rangoCompleto);
+            } else if (hora) {
+                showNotification('Formato inválido', 'error');
+            }
+        };
+        
+        window.editarHora = async (id, horaActual) => {
+            const hora = prompt('Modificar hora:', horaActual);
+            if (hora && hora !== horaActual) {
+                try {
+                    const { error } = await supabase.from('turnos').update({ hora_atencion_programada: hora }).eq('id', id);
+                    if (error) throw error;
+                    await cargarDatos();
+                    showNotification('Hora actualizada', 'success');
+                } catch (error) {
+                    showNotification('Error: ' + error.message, 'error');
+                }
+            }
+        };
+        
+        window.rechazarTurno = (id) => {
+            const motivo = prompt('Motivo del rechazo:');
+            if (motivo) {
+                actualizarEstadoTurno(id, 'rechazado', motivo);
+            }
+        };
+        
+        window.marcarAtendido = (id) => {
+            if (confirm('¿Confirmar atendido?')) {
+                actualizarEstadoTurno(id, 'atendido');
+            }
+        };
+        
+        window.marcarNoAsistio = (id) => {
+            if (confirm('¿Confirmar no asistió?')) {
+                actualizarEstadoTurno(id, 'no_asistio');
+            }
+        };
+        
+        window.cerrarMiTurno = () => {
+            state.miTurno = null;
+            render();
+        };
+        
+        window.verMiTurno = async () => {
+            const miTurnoId = localStorage.getItem('miTurnoId');
+            if (miTurnoId) {
+                await cargarDatos();
+                const turno = state.turnos.find(t => t.id === parseInt(miTurnoId));
+                if (turno) {
+                    state.miTurno = turno;
+                    render();
+                } else {
+                    localStorage.removeItem('miTurnoId');
+                    showNotification('Turno no disponible', 'warning');
+                    render();
+                }
+            }
+        };
+        
+        window.volverInicio = () => {
+            state.miTurno = null;
+            localStorage.removeItem('miTurnoId');
+            render();
+        };
+        
+        window.filtrarTurnos = (filtro) => {
+            state.filtroTurnos = filtro;
+            actualizarListaTurnosUI();
+        };
+
+        // RENDERIZADO PRINCIPAL
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.vista === 'login') {
+                app.innerHTML = renderLogin();
+                attachLoginEvents();
+            } else if (state.vista === 'estudiante') {
+                app.innerHTML = renderEstudiante();
+                attachEstudianteEvents();
+            } else if (state.vista === 'profesor') {
+                app.innerHTML = renderProfesor();
+                attachProfesorEvents();
+            } else if (state.vista === 'dece') {
+                app.innerHTML = renderDECE();
+            }
+        }
+
+        // VERIFICAR SESIÓN E INICIALIZACIÓN
+        function verificarSesion() {
+            const sesion = localStorage.getItem('sesion');
+            if (sesion) {
+                const { tipo, usuario } = JSON.parse(sesion);
+                state.tipoUsuario = tipo;
+                state.vista = tipo;
+                // Restaurar usuario para TODOS los tipos (estudiante, profesor, dece)
+                state.usuarioActual = usuario;
+            }
+        }
+
+        // Auto-refresh OPTIMIZADO - 10 segundos
+        let refreshInterval;
+        
+        function iniciarAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            
+            refreshInterval = setInterval(async () => {
+                if (state.configurado && (state.vista === 'estudiante' || state.vista === 'dece')) {
+                    await cargarDatos();
+                }
+            }, 10000);
+        }
+
+        // Inicialización
+        async function init() {
+            // Cargar base de datos de estudiantes
+            await cargarEstudiantes();
+            
+            await verificarConfiguracion();
+            verificarSesion();
+            
+            if (state.vista !== 'login') {
+                await cargarDatos();
+                
+                if (state.vista === 'estudiante') {
+                    const miTurnoId = localStorage.getItem('miTurnoId');
+                    if (miTurnoId && state.turnos.length > 0) {
+                        const turno = state.turnos.find(t => t.id === parseInt(miTurnoId));
+                        if (turno) state.miTurno = turno;
+                    }
+                    
+                    state.historialEstudiante = state.turnos.filter(t => 
+                        t.email_estudiante === state.usuarioActual.email
+                    );
+                }
+            }
+            
+            render();
+            iniciarAutoRefresh();
+        }
+
+        init();
+    </script>
+</body>
+</html>
