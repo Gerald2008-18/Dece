@@ -7,13 +7,56 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/wNhQpyX0/image-30.png">
     <link rel="shortcut icon" type="image/png" href="https://i.ibb.co/wNhQpyX0/image-30.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/wNhQpyX0/image-30.png">
+    <!-- Cargar Tailwind con defer para no bloquear -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Cargar EmailJS con defer -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
         
         * {
             font-family: 'Poppins', sans-serif;
+        }
+        
+        /* PANTALLA DE CARGA */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #3b82f6 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
         }
         
         @keyframes fadeIn {
@@ -212,6 +255,13 @@
     </style>
 </head>
 <body class="gradient-bg min-h-screen relative overflow-x-hidden">
+    <!-- PANTALLA DE CARGA -->
+    <div id="loadingScreen" class="loading-screen">
+        <img src="https://i.ibb.co/wNhQpyX0/image-30.png" alt="UEPDC" class="logo-institucional mb-4">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Cargando Sistema DECE...</div>
+    </div>
+
     <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
     
     <audio id="notificationSound" preload="auto">
@@ -402,7 +452,7 @@
         // BASE DE DATOS DE ESTUDIANTES
         let ESTUDIANTES_BD = {};
         
-        // Cargar base de datos de estudiantes
+        // Cargar base de datos de estudiantes - OPTIMIZADO
         async function cargarEstudiantes() {
             try {
                 const response = await fetch('estudiantes_uepdc.json');
@@ -412,7 +462,7 @@
                 return true;
             } catch (error) {
                 console.error('❌ Error al cargar estudiantes:', error);
-                showNotification('Error: No se pudo cargar la base de datos de estudiantes', 'error');
+                // No mostrar notificación para no bloquear la carga
                 return false;
             }
         }
@@ -434,50 +484,53 @@
             return null;
         }
         
-        // CONFIGURACIÓN DE EMAILJS
+        // CONFIGURACIÓN DE EMAILJS - ACTUALIZADO CON TEMPLATES DE RECHAZO
         const EMAILJS_CONFIG = {
             PUBLIC_KEY: 'RtA5YFyTxrNjrb_CX',
             SERVICE_ID: 'service_83qp86c',
-            TEMPLATE_ID: 'template_nipqoci',  // ✅ Template de ESTUDIANTES (Auto-Reply)
-            TEMPLATE_ID_PROFESOR: 'template_lrn0pgf'  // ✅ Template de PROFESORES (Contact Us)
+            TEMPLATE_ID: 'template_nipqoci',  // Template de ACEPTACIÓN para ESTUDIANTES
+            TEMPLATE_ID_PROFESOR: 'template_lrn0pgf',  // Template de ACEPTACIÓN para PROFESORES
+            // ⚠️ NUEVOS TEMPLATES DE RECHAZO - DEBES CREARLOS EN EMAILJS
+            TEMPLATE_RECHAZO_ESTUDIANTE: 'template_rechazo_est',  // Template de RECHAZO para ESTUDIANTES
+            TEMPLATE_RECHAZO_PROFESOR: 'template_rechazo_prof'    // Template de RECHAZO para turnos de PROFESORES
         };
         
-        // Inicializar EmailJS
-        (function() {
+        // Variable para controlar si EmailJS está listo
+        let emailJSReady = false;
+        
+        // Inicializar EmailJS - OPTIMIZADO (se ejecuta cuando el DOM está listo)
+        function initEmailJS() {
             try {
                 if (typeof emailjs !== 'undefined') {
                     emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+                    emailJSReady = true;
                     console.log('✅ EmailJS inicializado correctamente');
-                    console.log('📋 Config:', {
-                        publicKey: EMAILJS_CONFIG.PUBLIC_KEY,
-                        serviceId: EMAILJS_CONFIG.SERVICE_ID,
-                        templateId: EMAILJS_CONFIG.TEMPLATE_ID
-                    });
                 } else {
-                    console.error('❌ EmailJS no está cargado');
+                    console.warn('⚠️ EmailJS aún no está disponible, reintentando...');
+                    setTimeout(initEmailJS, 500);
                 }
             } catch (error) {
                 console.error('❌ Error al inicializar EmailJS:', error);
             }
-        })();
+        }
         
-        // FUNCIÓN DE ENVÍO DE EMAIL
+        // FUNCIÓN DE ENVÍO DE EMAIL - ACEPTACIÓN
         async function enviarEmailAceptacion(turno) {
-            console.log('📧 INICIANDO ENVÍO DE EMAIL');
-            console.log('Datos del turno:', turno);
+            console.log('📧 INICIANDO ENVÍO DE EMAIL DE ACEPTACIÓN');
+            
+            if (!emailJSReady || typeof emailjs === 'undefined') {
+                console.warn('⚠️ EmailJS no está disponible');
+                return false;
+            }
             
             if (!turno || typeof turno !== 'object') {
                 console.error('❌ Turno no válido');
                 return false;
             }
             
-            let emailEstudiante = turno.email_estudiante;
+            let emailEstudiante = turno.email_estudiante || turno.correo_estudiante || turno.email;
             
             if (!emailEstudiante) {
-                emailEstudiante = turno.correo_estudiante || turno.email || null;
-            }
-            
-            if (emailEstudiante === null || emailEstudiante === undefined) {
                 console.error('❌ Email es NULL o undefined');
                 return false;
             }
@@ -492,14 +545,6 @@
             const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!regexEmail.test(emailLimpio)) {
                 console.error('❌ Email con formato inválido:', emailLimpio);
-                return false;
-            }
-            
-            console.log('✅ Email validado:', emailLimpio);
-            
-            // Verificar EmailJS
-            if (typeof emailjs === 'undefined') {
-                console.warn('⚠️ EmailJS no está disponible - continuando sin enviar email');
                 return false;
             }
             
@@ -538,13 +583,9 @@
                     teacher_email: esProfesor ? String(turno.email_profesor || '') : ''
                 };
                 
-                // Usar template diferente si fue solicitado por profesor
                 const templateId = esProfesor ? 
                     EMAILJS_CONFIG.TEMPLATE_ID_PROFESOR : 
                     EMAILJS_CONFIG.TEMPLATE_ID;
-                
-                console.log('📤 Parámetros del email:', templateParams);
-                console.log('🚀 Intentando enviar email a:', emailLimpio);
                 
                 const response = await emailjs.send(
                     EMAILJS_CONFIG.SERVICE_ID,
@@ -552,29 +593,147 @@
                     templateParams
                 );
                 
-                console.log('✅ EMAIL ENVIADO EXITOSAMENTE');
-                console.log('Respuesta de EmailJS:', response);
+                console.log('✅ EMAIL DE ACEPTACIÓN ENVIADO');
                 showNotification(`📧 Email enviado a ${emailLimpio}`, 'success');
                 return true;
                 
             } catch (error) {
                 console.error('❌ ERROR AL ENVIAR EMAIL:', error);
-                console.error('Tipo de error:', typeof error);
-                console.error('Status:', error.status);
-                console.error('Text:', error.text);
+                return false;
+            }
+        }
+        
+        // ========== NUEVA FUNCIÓN: EMAIL DE RECHAZO PARA ESTUDIANTES ==========
+        async function enviarEmailRechazoEstudiante(turno, motivoRechazo) {
+            console.log('📧 ENVIANDO EMAIL DE RECHAZO A ESTUDIANTE');
+            
+            if (!emailJSReady || typeof emailjs === 'undefined') {
+                console.warn('⚠️ EmailJS no está disponible');
+                return false;
+            }
+            
+            if (!turno || !turno.email_estudiante) {
+                console.error('❌ Datos del turno incompletos');
+                return false;
+            }
+            
+            const emailLimpio = String(turno.email_estudiante).trim();
+            const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!regexEmail.test(emailLimpio)) {
+                console.error('❌ Email inválido');
+                return false;
+            }
+            
+            try {
+                const fechaSolicitud = turno.created_at 
+                    ? new Date(turno.created_at).toLocaleDateString('es-ES', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })
+                    : 'No disponible';
                 
-                let mensajeError = 'Turno aceptado';
-                if (error.status === 412) {
-                    mensajeError += ' (verifica configuración EmailJS)';
-                } else if (error.status === 400) {
-                    mensajeError += ' (parámetros de email inválidos)';
-                } else if (error.text) {
-                    mensajeError += ` (${error.text})`;
-                } else {
-                    mensajeError += ' (email no enviado)';
+                const templateParams = {
+                    to_email: emailLimpio,
+                    reply_to: emailLimpio,
+                    to_name: String(turno.nombre || 'Estudiante'),
+                    student_name: String(turno.nombre || 'Estudiante'),
+                    turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
+                    fecha_solicitud: fechaSolicitud,
+                    motivo_turno: String(turno.motivo || 'No especificado'),
+                    motivo_rechazo: String(motivoRechazo || 'No especificado'),
+                    curso: String(turno.curso || 'No especificado')
+                };
+                
+                const response = await emailjs.send(
+                    EMAILJS_CONFIG.SERVICE_ID,
+                    EMAILJS_CONFIG.TEMPLATE_RECHAZO_ESTUDIANTE,
+                    templateParams
+                );
+                
+                console.log('✅ EMAIL DE RECHAZO A ESTUDIANTE ENVIADO');
+                showNotification(`📧 Notificación de rechazo enviada a ${emailLimpio}`, 'info');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ ERROR AL ENVIAR EMAIL DE RECHAZO:', error);
+                // No bloquear el flujo si falla el email
+                return false;
+            }
+        }
+        
+        // ========== NUEVA FUNCIÓN: EMAIL DE RECHAZO PARA TURNOS DE PROFESORES ==========
+        async function enviarEmailRechazoProfesor(turno, motivoRechazo) {
+            console.log('📧 ENVIANDO EMAIL DE RECHAZO (TURNO SOLICITADO POR PROFESOR)');
+            
+            if (!emailJSReady || typeof emailjs === 'undefined') {
+                console.warn('⚠️ EmailJS no está disponible');
+                return false;
+            }
+            
+            if (!turno) {
+                console.error('❌ Datos del turno incompletos');
+                return false;
+            }
+            
+            // Enviar email tanto al estudiante como al profesor
+            const emailEstudiante = String(turno.email_estudiante || '').trim();
+            const emailProfesor = String(turno.email_profesor || '').trim();
+            const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            try {
+                const fechaSolicitud = turno.created_at 
+                    ? new Date(turno.created_at).toLocaleDateString('es-ES', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })
+                    : 'No disponible';
+                
+                const templateParams = {
+                    to_email: emailProfesor || emailEstudiante, // Prioridad al profesor
+                    reply_to: emailProfesor || emailEstudiante,
+                    to_name: String(turno.nombre_profesor || 'Profesor'),
+                    teacher_name: String(turno.nombre_profesor || 'Profesor'),
+                    teacher_email: emailProfesor,
+                    student_name: String(turno.nombre || 'Estudiante'),
+                    student_email: emailEstudiante,
+                    turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
+                    fecha_solicitud: fechaSolicitud,
+                    motivo_turno: String(turno.motivo || 'No especificado'),
+                    motivo_rechazo: String(motivoRechazo || 'No especificado'),
+                    curso: String(turno.curso || 'No especificado')
+                };
+                
+                // Enviar al profesor
+                if (regexEmail.test(emailProfesor)) {
+                    await emailjs.send(
+                        EMAILJS_CONFIG.SERVICE_ID,
+                        EMAILJS_CONFIG.TEMPLATE_RECHAZO_PROFESOR,
+                        templateParams
+                    );
+                    console.log('✅ Email de rechazo enviado al profesor');
                 }
                 
-                showNotification(`✅ ${mensajeError}`, 'success');
+                // También enviar al estudiante
+                if (regexEmail.test(emailEstudiante) && emailEstudiante !== emailProfesor) {
+                    templateParams.to_email = emailEstudiante;
+                    templateParams.to_name = turno.nombre;
+                    await emailjs.send(
+                        EMAILJS_CONFIG.SERVICE_ID,
+                        EMAILJS_CONFIG.TEMPLATE_RECHAZO_ESTUDIANTE,
+                        templateParams
+                    );
+                    console.log('✅ Email de rechazo enviado al estudiante');
+                }
+                
+                showNotification(`📧 Notificaciones de rechazo enviadas`, 'info');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ ERROR AL ENVIAR EMAIL DE RECHAZO:', error);
                 return false;
             }
         }
@@ -717,7 +876,7 @@
             historialEstudiante: []
         };
 
-        // CLIENTE SUPABASE
+        // CLIENTE SUPABASE - OPTIMIZADO
         const supabase = {
             from: (table) => ({
                 select: async (columns = '*') => {
@@ -772,13 +931,11 @@
         // FUNCIONES DE DATOS
         async function verificarYActualizarEstadosTurnos(turnos) {
             for (const turno of turnos) {
-                // Solo procesar turnos aceptados con hora programada
                 if (turno.estado === 'aceptado' && turno.hora_atencion_programada) {
                     const horaInicio = HoraUtils.extraerHoraInicio(turno.hora_atencion_programada);
                     
                     if (!horaInicio) continue;
                     
-                    // Si la cita ya terminó (pasaron más de 40 minutos), marcar automáticamente como ATENDIDO
                     if (HoraUtils.citaYaTermino(horaInicio)) {
                         console.log(`✅ Auto-marcando turno ${turno.id} como ATENDIDO (cita terminada)`);
                         await supabase.from('turnos').update({ 
@@ -786,8 +943,6 @@
                             hora_atencion: new Date().toISOString()
                         }).eq('id', turno.id);
                     }
-                    // Si la cita está en proceso, se mostrará visualmente en el renderizado
-                    // (no necesitamos cambiar el estado en la BD, solo se muestra en la UI)
                 }
             }
         }
@@ -926,12 +1081,10 @@
                 </div>
             `;
             
-            // TAMBIÉN actualizar la sección de Control de arriba
             actualizarControlUI();
         }
         
         function actualizarControlUI() {
-            // Actualizar los números pequeños de las tarjetas de Control
             const tarjetasPequenas = document.querySelector('.grid.grid-cols-2.gap-3');
             if (tarjetasPequenas) {
                 tarjetasPequenas.innerHTML = `
@@ -1009,7 +1162,6 @@
         // AUTENTICACIÓN
         async function loginEstudiante(email, password) {
             try {
-                // Buscar en Supabase con filtro en URL
                 const response = await fetch(
                     `${SUPABASE_URL}/rest/v1/usuarios_estudiantes?email=eq.${encodeURIComponent(email)}&password=eq.${encodeURIComponent(password)}&select=*`,
                     {
@@ -1022,8 +1174,6 @@
                 const usuarios = await response.json();
                 
                 if (!response.ok || !usuarios || usuarios.length === 0) {
-                    console.warn('⚠️ No encontrado en Supabase, intentando localStorage');
-                    // Fallback a localStorage
                     const usuariosLocal = JSON.parse(localStorage.getItem('usuarios_estudiantes') || '[]');
                     const usuario = usuariosLocal.find(u => u.email === email && u.password === password);
                     if (!usuario) return false;
@@ -1079,23 +1229,19 @@
             try {
                 const { nombre, email, cedula, nivel, grado, paralelo, password } = datosFormulario;
                 
-                // Validar email institucional
                 if (!email.endsWith('@est.uepdc.edu.ec')) {
                     showNotification('❌ Debes usar tu correo institucional (@est.uepdc.edu.ec)', 'error');
                     return false;
                 }
                 
-                // Validar nombre completo (al menos dos palabras)
                 const palabrasNombre = nombre.trim().split(/\s+/);
                 if (palabrasNombre.length < 2) {
                     showNotification('❌ Ingresa tu nombre completo (nombre y apellido)', 'error');
                     return false;
                 }
                 
-                // Construir curso completo: "Grado + Paralelo" (ej: "Segundo Grado EGB A")
                 const cursoCompleto = `${grado} ${paralelo}`;
                 
-                // Verificar email en Supabase
                 const responseEmail = await fetch(
                     `${SUPABASE_URL}/rest/v1/usuarios_estudiantes?email=eq.${encodeURIComponent(email)}&select=email`,
                     {
@@ -1112,7 +1258,6 @@
                     return false;
                 }
                 
-                // Verificar cédula en Supabase
                 const responseCedula = await fetch(
                     `${SUPABASE_URL}/rest/v1/usuarios_estudiantes?cedula=eq.${encodeURIComponent(cedula)}&select=cedula`,
                     {
@@ -1129,15 +1274,12 @@
                     return false;
                 }
                 
-                // Insertar en Supabase
                 const nuevoUsuario = { nombre, email, cedula, curso: cursoCompleto, password };
                 const { data, error } = await supabase
                     .from('usuarios_estudiantes')
                     .insert([nuevoUsuario]);
                 
                 if (error) {
-                    console.error('⚠️ Error Supabase, guardando en localStorage:', error);
-                    // Fallback a localStorage
                     const usuarios = JSON.parse(localStorage.getItem('usuarios_estudiantes') || '[]');
                     
                     if (usuarios.find(u => u.email === email)) {
@@ -1153,11 +1295,9 @@
                     localStorage.setItem('usuarios_estudiantes', JSON.stringify(usuarios));
                     showNotification('⚠️ Registrado localmente (sin conexión a BD)', 'warning');
                 } else {
-                    console.log('✅ Usuario registrado en Supabase:', data);
                     showNotification(`¡Registro exitoso! Bienvenido/a ${nombre}`, 'success');
                 }
                 
-                // Iniciar sesión
                 state.usuarioActual = nuevoUsuario;
                 state.tipoUsuario = 'estudiante';
                 state.vista = 'estudiante';
@@ -1191,13 +1331,11 @@
 
         
         async function loginProfesor(email) {
-            // Validar que sea email de profesor (@uepdc.edu.ec)
             if (!email.endsWith('@uepdc.edu.ec') || email.endsWith('@est.uepdc.edu.ec')) {
                 showNotification('Debes usar tu correo institucional de profesor (@uepdc.edu.ec)', 'error');
                 return false;
             }
             
-            // Extraer nombre del email
             const nombreEmail = email.split('@')[0].replace(/\./g, ' ');
             const nombre = nombreEmail.split(' ').map(p => 
                 p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
@@ -1213,7 +1351,8 @@
             showNotification(`¡Bienvenido/a Profesor/a ${nombre}!`, 'success');
             return true;
         }
-            function cerrarSesion() {
+
+        function cerrarSesion() {
             state.usuarioActual = null;
             state.tipoUsuario = null;
             state.vista = 'login';
@@ -1305,7 +1444,6 @@
                     await cargarDatos();
                     showNotification(`¡Turno registrado exitosamente para ${turnoData.nombre}! 🎉`, 'success');
                     
-                    // Limpiar formulario
                     document.getElementById('formTurnoProfesor').reset();
                     document.getElementById('estudianteSelect').disabled = true;
                     document.getElementById('estudianteInfo').classList.add('hidden');
@@ -1319,7 +1457,8 @@
                 return false;
             }
         }
-            async function cambiarDisponibilidad() {
+
+        async function cambiarDisponibilidad() {
             try {
                 const nuevoEstado = !state.estadoDECE.disponible;
                 
@@ -1332,7 +1471,6 @@
                 state.estadoDECE.disponible = nuevoEstado;
                 showNotification(nuevoEstado ? 'Sistema activado ✅' : 'Sistema pausado ⏸️', 'info');
                 
-                // FORZAR RENDERIZADO COMPLETO para actualizar TODO el panel DECE
                 render();
             } catch (error) {
                 console.error('Error:', error);
@@ -1340,6 +1478,7 @@
             }
         }
 
+        // ========== FUNCIÓN ACTUALIZADA: ENVÍA EMAIL DE RECHAZO ==========
         async function actualizarEstadoTurno(turnoId, nuevoEstado, motivoRechazo = null, horaProgramada = null, notaDECE = null) {
             try {
                 const actualizado = { estado: nuevoEstado };
@@ -1353,7 +1492,6 @@
                 const { error } = await supabase.from('turnos').update(actualizado).eq('id', turnoId);
                 if (error) throw error;
                 
-                // Primero mostrar que el turno fue actualizado
                 const mensajes = {
                     'aceptado': '✅ Turno aceptado correctamente',
                     'rechazado': '❌ Turno rechazado',
@@ -1363,16 +1501,33 @@
                 
                 showNotification(mensajes[nuevoEstado] || 'Turno actualizado', 'success');
                 
-                // Recargar datos
+                // Obtener turno antes de recargar
+                const turnoAntes = state.turnos.find(t => t.id === turnoId);
+                
                 await cargarDatos();
                 
-                // Intentar enviar email DESPUÉS de actualizar (sin bloquear)
+                // Enviar emails según el estado
                 if (nuevoEstado === 'aceptado') {
                     const turnoActualizado = state.turnos.find(t => t.id === turnoId);
                     if (turnoActualizado) {
-                        // Enviar email en segundo plano sin esperar
                         enviarEmailAceptacion(turnoActualizado).catch(err => {
                             console.warn('Email no enviado pero turno aceptado:', err);
+                        });
+                    }
+                }
+                
+                // ========== NUEVO: ENVIAR EMAIL DE RECHAZO ==========
+                if (nuevoEstado === 'rechazado' && turnoAntes) {
+                    // Verificar si fue solicitado por profesor o estudiante
+                    if (turnoAntes.solicitado_por === 'profesor') {
+                        // Turno solicitado por profesor - enviar a ambos
+                        enviarEmailRechazoProfesor(turnoAntes, motivoRechazo).catch(err => {
+                            console.warn('Email de rechazo no enviado:', err);
+                        });
+                    } else {
+                        // Turno solicitado por estudiante
+                        enviarEmailRechazoEstudiante(turnoAntes, motivoRechazo).catch(err => {
+                            console.warn('Email de rechazo no enviado:', err);
                         });
                     }
                 }
@@ -1532,19 +1687,13 @@
             `;
         }
 
+        // ========== FORMULARIO DECE - SIN CUADRO DE CREDENCIALES ==========
         function renderFormDECE() {
             return `
                 <form id="loginDECEForm" class="space-y-5 fade-in">
-                    <div class="border-l-4 p-5 rounded-xl mb-5" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color: #f59e0b;">
-                        <p class="text-sm font-semibold" style="color: #92400e;">
-                            <strong class="block mb-2 text-lg">🔐 Credenciales DECE:</strong>
-                            📧 deceuepdcdece@uepdc.edu.ec<br>
-                            🔑 geraldmontoya
-                        </p>
-                    </div>
                     <div>
                         <label class="block font-bold mb-2 text-sm" style="color: #92400e;">📧 Correo</label>
-                        <input type="email" name="email" required class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #fbbf24;" placeholder="deceuepdcdece@uepdc.edu.ec">
+                        <input type="email" name="email" required class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #fbbf24;" placeholder="correo@uepdc.edu.ec">
                     </div>
                     <div>
                         <label class="block font-bold mb-2 text-sm" style="color: #92400e;">🔒 Contraseña</label>
@@ -1561,18 +1710,10 @@
         }
 
 
-        
+        // ========== FORMULARIO PROFESOR - SIN CUADRO DE INFORMACIÓN ==========
         function renderFormProfesor() {
             return `
                 <form id="loginProfesorForm" class="space-y-5 fade-in">
-                    <div class="border-l-4 p-5 rounded-xl mb-5" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-color: #10b981;">
-                        <p class="text-sm font-semibold" style="color: #065f46;">
-                            <strong class="block mb-2 text-lg">👨‍🏫 Acceso para Profesores</strong>
-                            Ingresa tu correo institucional para acceder al panel de profesores.
-                            <br><br>
-                            📧 Extensión válida: <strong>@uepdc.edu.ec</strong>
-                        </p>
-                    </div>
                     <div>
                         <label class="block font-bold mb-2 text-sm" style="color: #065f46;">📧 Correo Institucional</label>
                         <input type="email" name="email" required pattern=".+@uepdc\\.edu\\.ec$" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #34d399;" placeholder="profesor@uepdc.edu.ec">
@@ -1587,7 +1728,8 @@
                 </form>
             `;
         }
-            function renderEstudiante() {
+
+        function renderEstudiante() {
             const miTurnoId = localStorage.getItem('miTurnoId');
             const tieneTurnoActivo = miTurnoId && state.turnos.find(t => 
                 t.id === parseInt(miTurnoId) && 
@@ -1748,394 +1890,46 @@
                 ${estaEnProceso ? `
                     <div class="badge-en-proceso text-white p-8 rounded-2xl mb-6 text-center shadow-xl">
                         <div class="text-5xl mb-3">🔄</div>
-                        <div class="font-black text-3xl mb-3">¡CITA EN PROCESO!</div>
-                        <div class="text-xl font-semibold">El DECE te está atendiendo ahora</div>
-                        ${turno.hora_atencion_programada ? `
-                            <div class="mt-4 text-2xl font-black">🕐 ${turno.hora_atencion_programada}</div>
-                        ` : ''}
-                    </div>
-                ` : turno.estado === 'aceptado' && turnosAceptadosAntes === 0 ? `
-                    <div class="bg-gradient-to-r from-green-400 to-green-500 text-white p-8 rounded-2xl mb-6 text-center shadow-xl">
-                        <div class="text-5xl mb-3">🎉</div>
-                        <div class="font-black text-3xl mb-3">¡ES TU TURNO!</div>
-                        <div class="text-xl font-semibold">Dirígete al DECE ahora</div>
-                        ${turno.hora_atencion_programada ? `
-                            <div class="mt-4 text-2xl font-black">🕐 ${turno.hora_atencion_programada}</div>
-                        ` : ''}
-                    </div>
-                ` : turno.estado === 'aceptado' && turno.hora_atencion_programada ? `
-                    <div class="bg-gradient-to-r from-green-50 to-green-100 border-4 border-green-500 p-6 rounded-2xl mb-6 text-center">
-                        <div class="text-green-800 font-bold text-2xl mb-3">🕐 Hora programada</div>
-                        <div class="text-green-700 text-5xl font-black mt-3 mb-4">${turno.hora_atencion_programada}</div>
-                        ${turnosAceptadosAntes > 0 ? `
-                            <div class="mt-4 text-green-700 text-lg font-semibold">
-                                ⏰ ${turnosAceptadosAntes} persona${turnosAceptadosAntes !== 1 ? 's' : ''} antes que tú
-                            </div>
-                        ` : ''}
+                        <div class="text-3xl font-black">EN PROCESO</div>
+                        <div class="text-lg mt-2">Tu cita está en curso: ${turno.hora_atencion_programada}</div>
                     </div>
                 ` : ''}
                 
-                ${renderEstadoTurnoDetallado(turno)}
-                
-                <div class="mt-6 space-y-3">
-                    ${turno.estado === 'atendido' ? `
-                        <button onclick="volverInicio()" class="w-full gradient-bg text-white py-5 rounded-xl hover:shadow-2xl transition-all font-bold text-xl btn-modern">
-                            <span>✅ Finalizar - Solicitar Nuevo Turno</span>
-                        </button>
-                    ` : turno.estado === 'rechazado' ? `
-                        <button onclick="volverInicio()" class="w-full gradient-bg text-white py-5 rounded-xl hover:shadow-2xl transition-all font-bold text-xl btn-modern">
-                            <span>📝 Solicitar Nuevo Turno</span>
-                        </button>
-                    ` : `
-                        <button onclick="cerrarMiTurno()" class="w-full bg-gray-600 text-white py-4 rounded-xl hover:bg-gray-700 hover:shadow-xl transition-all font-bold text-lg">
-                            ⬅️ Ocultar turno
-                        </button>
-                    `}
+                <div class="bg-white rounded-2xl p-8 shadow-xl mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6">📋 Estado de tu turno</h3>
+                    ${renderEstadoTurno(turno)}
                 </div>
+                
+                <button onclick="volverInicio()" class="w-full bg-gray-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-600 transition-all btn-modern">
+                    <span>← Volver al inicio</span>
+                </button>
             `;
         }
 
-        function renderEstadoTurnoDetallado(turno) {
+        function renderEstadoTurno(turno) {
             const estados = {
-                pendiente: {
-                    icon: '⏳',
-                    titulo: '🟡 PENDIENTE DE REVISIÓN',
-                    mensaje: 'Tu solicitud está siendo revisada por el DECE. Pronto recibirás una respuesta.',
-                    bg: 'from-yellow-400 to-yellow-500',
-                    textColor: 'text-yellow-900'
-                },
-                aceptado: {
-                    icon: '✅',
-                    titulo: '🟢 TURNO ACEPTADO',
-                    mensaje: 'Tu turno ha sido aceptado. Espera tu llamado para ser atendido.',
-                    bg: 'from-green-400 to-green-500',
-                    textColor: 'text-green-900'
-                },
-                rechazado: {
-                    icon: '❌',
-                    titulo: '🔴 TURNO RECHAZADO',
-                    mensaje: 'Tu solicitud no pudo ser aceptada. Revisa el motivo a continuación.',
-                    bg: 'from-red-400 to-red-500',
-                    textColor: 'text-red-900'
-                },
-                atendido: {
-                    icon: '✔️',
-                    titulo: '🔵 TURNO COMPLETADO',
-                    mensaje: 'Tu consulta ha sido atendida exitosamente. Gracias por usar el sistema.',
-                    bg: 'from-blue-400 to-blue-500',
-                    textColor: 'text-blue-900'
-                }
+                'pendiente': { color: 'yellow', icon: '⏳', texto: 'Pendiente de revisión' },
+                'aceptado': { color: 'green', icon: '✅', texto: 'Aceptado' },
+                'rechazado': { color: 'red', icon: '❌', texto: 'Rechazado' },
+                'atendido': { color: 'blue', icon: '✔️', texto: 'Atendido' },
+                'no_asistio': { color: 'gray', icon: '🚫', texto: 'No asistió' }
             };
             
-            const estado = estados[turno.estado];
+            const estado = estados[turno.estado] || estados.pendiente;
             
             return `
-                <div class="bg-gradient-to-r ${estado.bg} text-white p-8 rounded-2xl shadow-xl">
-                    <div class="flex items-start gap-6">
-                        <div class="text-6xl">${estado.icon}</div>
-                        <div class="flex-1">
-                            <div class="font-black text-2xl mb-4">${estado.titulo}</div>
-                            <div class="text-lg leading-relaxed opacity-95">${estado.mensaje}</div>
-                            
-                            ${turno.estado === 'rechazado' && turno.motivo_rechazo ? `
-                                <div class="mt-6 p-5 bg-white rounded-xl shadow-lg">
-                                    <div class="font-bold ${estado.textColor} mb-3 text-xl">📝 Motivo:</div>
-                                    <div class="${estado.textColor} text-lg">${turno.motivo_rechazo}</div>
-                                </div>
+                <div class="bg-${estado.color}-100 border-2 border-${estado.color}-300 rounded-xl p-6">
+                    <div class="flex items-center gap-4">
+                        <span class="text-5xl">${estado.icon}</span>
+                        <div>
+                            <div class="text-2xl font-bold text-${estado.color}-700">${estado.texto}</div>
+                            ${turno.hora_atencion_programada ? `
+                                <div class="text-lg text-${estado.color}-600 mt-1">🕐 Hora programada: ${turno.hora_atencion_programada}</div>
                             ` : ''}
-                            
-                            ${turno.estado === 'atendido' && turno.hora_atencion ? `
-                                <div class="mt-5 pt-5 border-t-2 border-white/30 text-base opacity-90">
-                                    <strong>📅 Atendido:</strong> ${new Date(turno.hora_atencion).toLocaleDateString('es-ES')} ${new Date(turno.hora_atencion).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
-                                </div>
+                            ${turno.motivo_rechazo ? `
+                                <div class="text-lg text-red-600 mt-2">📝 Motivo: ${turno.motivo_rechazo}</div>
                             ` : ''}
                         </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        
-        function renderProfesor() {
-            // Verificación de seguridad
-            if (!state.usuarioActual) {
-                cerrarSesion();
-                return renderLogin();
-            }
-            
-            return `
-                <div class="p-4 fade-in">
-                    <div class="max-w-7xl mx-auto">
-                        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6 slide-in-left">
-                            <div class="flex justify-between items-center flex-wrap gap-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                                        👨‍🏫
-                                    </div>
-                                    <div>
-                                        <h1 class="text-3xl font-bold" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                                            Panel de Profesores
-                                        </h1>
-                                        <p class="text-gray-600 text-lg"><span class="font-bold" style="color: #059669;">${state.usuarioActual.nombre}</span></p>
-                                    </div>
-                                </div>
-                                <button onclick="cerrarSesion()" class="bg-red-500 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold">
-                                    <span>🚪 Salir</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        ${renderEstadoProfesor()}
-                        ${renderEstadisticasProfesor()}
-                        ${renderSolicitudTurnoProfesor()}
-                    </div>
-                </div>
-            `;
-        }
-        
-        function renderEstadoProfesor() {
-            const disponible = state.estadoDECE.disponible;
-            return `
-                <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 slide-in-right">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                        <span class="text-4xl">📡</span> Estado del DECE
-                    </h2>
-                    <div class="${disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} p-10 rounded-2xl text-center text-white shadow-xl">
-                        <div class="text-7xl mb-4">${disponible ? '✅' : '❌'}</div>
-                        <div class="text-4xl font-black mb-3">
-                            ${disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
-                        </div>
-                        <p class="text-xl opacity-90">${disponible ? 'Puedes solicitar turnos para tus estudiantes' : 'El DECE no está recibiendo solicitudes'}</p>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function renderEstadisticasProfesor() {
-            return `
-                <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 scale-in">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                        <span class="text-4xl">📊</span> Estadísticas del DECE
-                    </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-2xl text-center border-2 border-yellow-300 card-hover">
-                            <div class="text-3xl font-black text-yellow-700 mb-1">${state.estadisticas.pendientes}</div>
-                            <div class="text-xs text-yellow-600 font-semibold">⏳ Pendientes</div>
-                        </div>
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-2xl text-center border-2 border-green-300 card-hover">
-                            <div class="text-3xl font-black text-green-700 mb-1">${state.estadisticas.aceptados}</div>
-                            <div class="text-xs text-green-600 font-semibold">✅ Aceptados</div>
-                        </div>
-                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl text-center border-2 border-orange-300 card-hover">
-                            <div class="text-3xl font-black text-orange-700 mb-1">${state.estadisticas.enProceso}</div>
-                            <div class="text-xs text-orange-600 font-semibold">🔄 En proceso</div>
-                        </div>
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl text-center border-2 border-blue-300 card-hover">
-                            <div class="text-3xl font-black text-blue-700 mb-1">${state.estadisticas.atendidos}</div>
-                            <div class="text-xs text-blue-600 font-semibold">✔️ Completados</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function renderSolicitudTurnoProfesor() {
-            const cursos = ordenarCursosCorrectamente(Object.keys(ESTUDIANTES_BD));
-            return `
-                <div class="bg-white rounded-3xl shadow-2xl p-8 scale-in">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                        <span class="text-4xl">📝</span> Solicitar Turno para Estudiante
-                    </h2>
-                    <form id="formTurnoProfesor" class="space-y-6">
-                        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-300">
-                            <h3 class="font-bold text-xl mb-4 text-blue-900">🔍 Buscar Estudiante</h3>
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block font-bold text-gray-700 mb-2">📚 Seleccionar Curso</label>
-                                    <select id="cursoSelect" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-base select-modern" style="border-color: #60a5fa;">
-                                        <option value="">-- Selecciona un curso --</option>
-                                        ${cursos.map(curso => `<option value="${curso}">${curso}</option>`).join('')}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block font-bold text-gray-700 mb-2">👤 Seleccionar Estudiante</label>
-                                    <select id="estudianteSelect" disabled class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-base select-modern bg-gray-100">
-                                        <option value="">Primero selecciona un curso</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="estudianteInfo" class="mt-4 hidden">
-                                <div class="bg-white p-4 rounded-xl shadow-inner">
-                                    <p class="font-bold text-green-700">✅ Estudiante seleccionado:</p>
-                                    <p class="mt-2"><strong>Nombre:</strong> <span id="infoNombre"></span></p>
-                                    <p><strong>Email:</strong> <span id="infoEmail"></span></p>
-                                    <p><strong>Curso:</strong> <span id="infoCurso"></span></p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-2">📋 Motivo *</label>
-                            <select name="motivo" required class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg select-modern" style="border-color: #60a5fa;">
-                                <option value="">Seleccione un motivo</option>
-                                <option value="Apoyo Académico">📖 Apoyo Académico</option>
-                                <option value="Orientación Personal">💭 Orientación Personal</option>
-                                <option value="Dificultades Familiares">👨‍👩‍👧‍👦 Dificultades Familiares</option>
-                                <option value="Problemas de Comportamiento">⚠️ Problemas de Comportamiento</option>
-                                <option value="Orientación Vocacional">🎯 Orientación Vocacional</option>
-                                <option value="Situación de Riesgo">🚨 Situación de Riesgo</option>
-                                <option value="Problemas de Salud Mental">🧠 Problemas de Salud Mental</option>
-                                <option value="Acoso Escolar (Bullying)">🛡️ Acoso Escolar</option>
-                                <option value="Otros">📝 Otros</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block font-bold text-gray-700 mb-2">💬 Describe la situación (Opcional)</label>
-                            <textarea name="situacion" rows="4" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #60a5fa;" placeholder="Describe la situación del estudiante y por qué necesita atención del DECE... (Este campo es opcional para respetar la privacidad del estudiante)"></textarea>
-                        </div>
-                        
-                        <button type="submit" ${!state.estadoDECE.disponible ? 'disabled' : ''} class="w-full text-white py-5 rounded-xl font-black text-xl hover:shadow-2xl transition-all disabled:bg-gray-400 disabled:cursor-not-allowed btn-modern" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                            <span>✨ Solicitar Turno</span>
-                        </button>
-                    </form>
-                </div>
-            `;
-        }
-        
-        function renderDECE() {
-            return `
-                <div class="p-4 fade-in">
-                    <div class="max-w-7xl mx-auto">
-                        <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-6 mb-4 md:mb-6 slide-in-left">
-                            <div class="flex justify-between items-center flex-wrap gap-4">
-                                <div>
-                                    <h1 class="text-2xl md:text-4xl font-bold mb-2" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                                        👨‍⚕️ Panel DECE
-                                    </h1>
-                                    <p class="text-gray-600 text-sm md:text-lg">Gestión de Turnos - <span class="font-bold">${HoraUtils.getHoraEcuador().toLocaleDateString('es-ES')}</span></p>
-                                </div>
-                                <div class="flex gap-3">
-                                    <button onclick="refrescarManual()" class="gradient-bg-3 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all btn-modern font-bold text-sm md:text-base">
-                                        <span>🔄 Refrescar</span>
-                                    </button>
-                                    <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold text-sm md:text-base">
-                                        <span>🚪 Salir</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        ${renderControlDisponibilidad()}
-                        ${renderEstadisticas()}
-                        ${renderListaTurnosDECE()}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderControlDisponibilidad() {
-            return `
-                <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-8 mb-4 md:mb-6 slide-in-right">
-                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-3">
-                        <span class="text-3xl md:text-4xl">⚙️</span> Control
-                    </h2>
-                    <div class="grid md:grid-cols-2 gap-4 md:gap-6">
-                        <div class="${state.estadoDECE.disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} control-disponible-card rounded-2xl text-center text-white shadow-xl card-hover">
-                            <div class="control-disponible-icon mb-2 md:mb-4">${state.estadoDECE.disponible ? '✅' : '❌'}</div>
-                            <div class="control-disponible-title font-black mb-2 md:mb-4">
-                                ${state.estadoDECE.disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
-                            </div>
-                            <p class="control-disponible-text mb-4 md:mb-6 opacity-90">${state.estadoDECE.disponible ? 'El sistema está aceptando turnos' : 'El sistema está pausado'}</p>
-                            <button id="btnDisponibilidad" onclick="cambiarDisponibilidad()" class="${state.estadoDECE.disponible ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} control-disponible-btn text-white rounded-xl font-bold transition-all shadow-lg btn-modern">
-                                <span>${state.estadoDECE.disponible ? '⏸️ Pausar Sistema' : '▶️ Activar Sistema'}</span>
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
-                                <div class="control-stats-number font-black">${state.estadisticas.pendientes}</div>
-                                <div class="control-stats-label font-semibold opacity-90">⏳ Pendientes</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-green-400 to-green-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
-                                <div class="control-stats-number font-black">${state.estadisticas.aceptados}</div>
-                                <div class="control-stats-label font-semibold opacity-90">✅ Aceptados</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-orange-400 to-orange-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
-                                <div class="control-stats-number font-black">${state.estadisticas.enProceso}</div>
-                                <div class="control-stats-label font-semibold opacity-90">🔄 En proceso</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-blue-400 to-blue-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
-                                <div class="control-stats-number font-black">${state.estadisticas.atendidos}</div>
-                                <div class="control-stats-label font-semibold opacity-90">✔️ Atendidos</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderEstadisticas() {
-            return `
-                <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-8 mb-4 md:mb-6 scale-in">
-                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6 flex items-center gap-3">
-                        <span class="text-3xl md:text-4xl">📊</span> Estadísticas
-                    </h2>
-                    <div id="estadisticas">
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-5 rounded-2xl text-center border-2 border-gray-300 card-hover">
-                                <div class="text-3xl font-black text-gray-700 mb-1">${state.estadisticas.totalHoy}</div>
-                                <div class="text-xs text-gray-600 font-semibold">📋 Total hoy</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-2xl text-center border-2 border-yellow-300 card-hover">
-                                <div class="text-3xl font-black text-yellow-700 mb-1">${state.turnos.filter(t => t.estado === 'pendiente' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
-                                <div class="text-xs text-yellow-600 font-semibold">⏳ Pendientes</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl text-center border-2 border-orange-300 card-hover">
-                                <div class="text-3xl font-black text-orange-700 mb-1">${state.estadisticas.enProceso}</div>
-                                <div class="text-xs text-orange-600 font-semibold">🔄 En proceso</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl text-center border-2 border-blue-300 card-hover">
-                                <div class="text-3xl font-black text-blue-700 mb-1">${state.turnos.filter(t => t.estado === 'atendido' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
-                                <div class="text-xs text-blue-600 font-semibold">✔️ Completados</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-red-50 to-red-100 p-5 rounded-2xl text-center border-2 border-red-300 card-hover">
-                                <div class="text-3xl font-black text-red-700 mb-1">${state.estadisticas.no_asistio}</div>
-                                <div class="text-xs text-red-600 font-semibold">🚫 No asistió</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderListaTurnosDECE() {
-            const turnosFiltrados = filtrarYBuscarTurnos();
-            
-            return `
-                <div class="bg-white rounded-3xl shadow-2xl p-4 md:p-8 scale-in">
-                    <div class="flex justify-between items-center mb-4 md:mb-6 flex-wrap gap-4">
-                        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
-                            <span class="text-3xl md:text-4xl">📋</span> Turnos
-                        </h2>
-                        <div class="flex gap-2 flex-wrap">
-                            <button onclick="filtrarTurnos('todos')" class="${state.filtroTurnos === 'todos' ? 'gradient-bg text-white' : 'bg-gray-200 text-gray-700'} px-3 md:px-4 py-2 rounded-lg font-bold text-xs md:text-sm">
-                                Todos (${state.turnos.length})
-                            </button>
-                            <button onclick="filtrarTurnos('pendiente')" class="${state.filtroTurnos === 'pendiente' ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'} px-3 md:px-4 py-2 rounded-lg font-bold text-xs md:text-sm">
-                                ⏳ Pendientes (${state.estadisticas.pendientes})
-                            </button>
-                            <button onclick="filtrarTurnos('aceptado')" class="${state.filtroTurnos === 'aceptado' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'} px-3 md:px-4 py-2 rounded-lg font-bold text-xs md:text-sm">
-                                ✅ Aceptados (${state.estadisticas.aceptados})
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="listaTurnos">
-                        ${turnosFiltrados.length === 0 ? renderSinTurnos() : `
-                            <div class="space-y-4">
-                                ${turnosFiltrados.map(turno => renderTurnoCard(turno)).join('')}
-                            </div>
-                        `}
                     </div>
                 </div>
             `;
@@ -2143,10 +1937,10 @@
 
         function renderSinTurnos() {
             return `
-                <div class="text-center py-16 text-gray-500">
-                    <div class="text-7xl mb-6 opacity-50">📋</div>
-                    <div class="text-2xl font-bold mb-2">No hay turnos</div>
-                    <p class="text-lg">Los turnos aparecerán aquí cuando se soliciten</p>
+                <div class="text-center py-16">
+                    <div class="text-8xl mb-6">📭</div>
+                    <h3 class="text-3xl font-bold text-gray-700 mb-3">No hay turnos</h3>
+                    <p class="text-gray-500 text-lg">No se encontraron turnos con los filtros actuales</p>
                 </div>
             `;
         }
@@ -2160,395 +1954,585 @@
                 }
             }
             
-            const colores = {
-                pendiente: { 
-                    bg: 'from-yellow-50 to-yellow-100', 
-                    border: 'border-yellow-500', 
-                    badge: 'bg-yellow-500 text-white',
-                    icon: '⏳'
-                },
-                aceptado: { 
-                    bg: 'from-green-50 to-green-100', 
-                    border: 'border-green-500', 
-                    badge: estaEnProceso ? 'badge-en-proceso text-white' : 'bg-green-500 text-white',
-                    icon: estaEnProceso ? '🔄' : '✅'
-                },
-                rechazado: { 
-                    bg: 'from-red-50 to-red-100', 
-                    border: 'border-red-500', 
-                    badge: 'bg-red-500 text-white',
-                    icon: '❌'
-                },
-                atendido: { 
-                    bg: 'from-blue-50 to-blue-100', 
-                    border: 'border-blue-500', 
-                    badge: 'bg-blue-500 text-white',
-                    icon: '✔️'
-                },
-                no_asistio: { 
-                    bg: 'from-gray-50 to-gray-100', 
-                    border: 'border-gray-500', 
-                    badge: 'bg-gray-500 text-white',
-                    icon: '🚫'
-                }
+            const coloresEstado = {
+                'pendiente': 'bg-yellow-100 border-yellow-300',
+                'aceptado': estaEnProceso ? 'bg-orange-100 border-orange-400' : 'bg-green-100 border-green-300',
+                'rechazado': 'bg-red-100 border-red-300',
+                'atendido': 'bg-blue-100 border-blue-300',
+                'no_asistio': 'bg-gray-100 border-gray-300'
             };
-            const c = colores[turno.estado] || colores.pendiente;
-
+            
+            const iconosEstado = {
+                'pendiente': '⏳',
+                'aceptado': estaEnProceso ? '🔄' : '✅',
+                'rechazado': '❌',
+                'atendido': '✔️',
+                'no_asistio': '🚫'
+            };
+            
+            const esSolicitadoPorProfesor = turno.solicitado_por === 'profesor';
+            
             return `
-                <div class="bg-gradient-to-r ${c.bg} border-l-4 ${c.border} p-4 md:p-6 rounded-2xl shadow-lg card-hover">
-                    <div class="flex justify-between items-start flex-wrap gap-4 mb-4">
-                        <div class="flex items-center gap-3 md:gap-4">
-                            <div class="gradient-bg text-white w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center font-black text-lg md:text-2xl shadow-lg">
-                                #${turno.numero_turno}
-                            </div>
+                <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 ${coloresEstado[turno.estado]} card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">${iconosEstado[turno.estado]}</span>
                             <div>
-                                <div class="font-black text-base md:text-xl text-gray-800">${turno.nombre}</div>
-                                <div class="text-xs md:text-sm text-gray-600 font-semibold mt-1">🆔 ${turno.cedula} • 📚 ${turno.curso}</div>
-                                <div class="text-xs md:text-sm text-gray-600 font-semibold">📧 ${turno.email_estudiante || 'No registrado'}</div>
+                                <h3 class="text-xl font-bold text-gray-800">${turno.nombre}</h3>
+                                <p class="text-gray-600">${turno.curso}</p>
+                                ${esSolicitadoPorProfesor ? `
+                                    <p class="text-sm text-purple-600 font-semibold mt-1">👨‍🏫 Solicitado por: ${turno.nombre_profesor || 'Profesor'}</p>
+                                ` : ''}
                             </div>
                         </div>
-                        <span class="${c.badge} px-3 md:px-4 py-1 md:py-2 rounded-xl text-xs md:text-sm font-black flex items-center gap-2 shadow-md">
-                            ${c.icon} ${estaEnProceso ? 'EN PROCESO' : turno.estado.toUpperCase()}
-                        </span>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">#${turno.numero_turno}</div>
+                            <div class="text-xs text-gray-400">${new Date(turno.created_at).toLocaleString('es-ES')}</div>
+                        </div>
                     </div>
                     
-                    <div class="grid md:grid-cols-2 gap-3 text-xs md:text-sm mb-4">
-                        <div class="bg-white p-3 rounded-lg">
-                            <span class="font-bold text-gray-700">📋 Motivo:</span> 
-                            <span class="text-gray-600">${turno.motivo}</span>
-                        </div>
-                        <div class="bg-white p-3 rounded-lg">
-                            <span class="font-bold text-gray-700">📅 Fecha:</span> 
-                            <span class="text-gray-600">${new Date(turno.created_at).toLocaleDateString('es-ES')} ${new Date(turno.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div><span class="font-semibold">📋 Motivo:</span> ${turno.motivo}</div>
+                        <div><span class="font-semibold">📧 Email:</span> ${turno.email_estudiante || 'N/A'}</div>
                         ${turno.hora_atencion_programada ? `
-                            <div class="bg-white p-3 rounded-lg md:col-span-2">
-                                <span class="font-bold text-green-700">🕐 Hora programada:</span> 
-                                <span class="text-green-600 font-black text-base md:text-lg">${turno.hora_atencion_programada}</span>
-                                ${estaEnProceso ? '<span class="ml-2 badge-en-proceso px-2 md:px-3 py-1 rounded-full text-xs">⚡ AHORA</span>' : ''}
+                            <div class="col-span-2"><span class="font-semibold">🕐 Hora:</span> ${turno.hora_atencion_programada} 
+                                <button onclick="editarHora(${turno.id}, '${turno.hora_atencion_programada}')" class="text-blue-500 hover:text-blue-700 ml-2">✏️</button>
                             </div>
+                        ` : ''}
+                        ${turno.motivo_rechazo ? `
+                            <div class="col-span-2 text-red-600"><span class="font-semibold">❌ Rechazo:</span> ${turno.motivo_rechazo}</div>
+                        ` : ''}
+                        ${turno.nota_dece ? `
+                            <div class="col-span-2 text-purple-600"><span class="font-semibold">📝 Nota DECE:</span> ${turno.nota_dece}</div>
                         ` : ''}
                     </div>
                     
                     ${turno.situacion ? `
-                        <div class="bg-white p-3 md:p-4 rounded-lg mb-4">
-                            <span class="font-bold text-gray-700 block mb-2 text-xs md:text-sm">💬 Situación:</span>
-                            <p class="text-gray-600 text-xs md:text-sm">${turno.situacion}</p>
+                        <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                            <span class="font-semibold text-gray-700">💬 Situación:</span>
+                            <p class="text-gray-600 mt-1">${turno.situacion}</p>
                         </div>
                     ` : ''}
                     
-                    ${turno.motivo_rechazo ? `
-                        <div class="bg-white p-3 md:p-4 rounded-lg mb-4 border-l-4 border-red-500">
-                            <span class="font-bold text-red-700 block mb-2 text-xs md:text-sm">📝 Motivo de rechazo:</span>
-                            <p class="text-red-600 text-xs md:text-sm">${turno.motivo_rechazo}</p>
+                    ${estaEnProceso ? `
+                        <div class="badge-en-proceso text-white px-4 py-2 rounded-lg text-center mb-4 font-bold">
+                            🔄 CITA EN PROCESO
                         </div>
                     ` : ''}
                     
-                    ${turno.nota_dece ? `
-                        <div class="p-3 md:p-4 rounded-lg mb-4 border-l-4" style="background: #dbeafe; border-color: #3b82f6;">
-                            <span class="font-bold block mb-2 text-xs md:text-sm" style="color: #1e40af;">📌 Nota DECE:</span>
-                            <p class="text-xs md:text-sm" style="color: #1e40af;">${turno.nota_dece}</p>
-                        </div>
-                    ` : ''}
-                    
-                    <div class="flex gap-2 flex-wrap">
-                        ${renderBotonesTurno(turno)}
+                    <div class="flex flex-wrap gap-2">
+                        ${turno.estado === 'pendiente' ? `
+                            <button onclick="aceptarTurnoConHora(${turno.id})" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all font-semibold">
+                                ✅ Aceptar
+                            </button>
+                            <button onclick="rechazarTurno(${turno.id})" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all font-semibold">
+                                ❌ Rechazar
+                            </button>
+                        ` : ''}
+                        ${turno.estado === 'aceptado' ? `
+                            <button onclick="marcarAtendido(${turno.id})" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all font-semibold">
+                                ✔️ Atendido
+                            </button>
+                            <button onclick="marcarNoAsistio(${turno.id})" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all font-semibold">
+                                🚫 No asistió
+                            </button>
+                        ` : ''}
+                        <button onclick="agregarNotaDECE(${turno.id})" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-all font-semibold">
+                            📝 Nota
+                        </button>
                     </div>
                 </div>
             `;
         }
 
-        function renderBotonesTurno(turno) {
-            let botones = '';
+        function renderProfesor() {
+            const cursosDisponibles = ordenarCursosCorrectamente(Object.keys(ESTUDIANTES_BD));
             
-            if (turno.estado === 'pendiente') {
-                botones = `
-                    <button onclick="aceptarTurnoConHora(${turno.id})" class="gradient-bg text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold btn-modern text-xs md:text-sm">
-                        <span>✅ Aceptar y Programar</span>
-                    </button>
-                    <button onclick="rechazarTurno(${turno.id})" class="bg-red-500 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all font-bold btn-modern text-xs md:text-sm">
-                        <span>🚫 No disponible</span>
-                    </button>
-                `;
-            }
-            
-            if (turno.estado === 'aceptado') {
-                botones = `
-                    <button onclick="marcarAtendido(${turno.id})" class="gradient-bg-3 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold btn-modern text-xs md:text-sm">
-                        <span>✔️ Marcar Atendido</span>
-                    </button>
-                    <button onclick="marcarNoAsistio(${turno.id})" class="bg-orange-600 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl hover:bg-orange-700 transition-all font-bold btn-modern text-xs md:text-sm">
-                        <span>🚫 No Asistió</span>
-                    </button>
-                    ${turno.hora_atencion_programada ? `
-                        <button onclick="editarHora(${turno.id}, '${turno.hora_atencion_programada}')" class="gradient-bg-2 text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold btn-modern text-xs md:text-sm">
-                            <span>🕐 Cambiar Hora</span>
-                        </button>
-                    ` : ''}
-                `;
-            }
-            
-            botones += `
-                <button onclick="agregarNotaDECE(${turno.id})" class="text-white px-4 md:px-5 py-2 md:py-3 rounded-xl hover:shadow-xl transition-all font-bold text-xs md:text-sm" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
-                    📌 ${turno.nota_dece ? 'Editar' : 'Agregar'} Nota
-                </button>
+            return `
+                <div class="p-4 fade-in">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6 slide-in-left">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                        👨‍🏫
+                                    </div>
+                                    <div>
+                                        <h1 class="text-3xl font-bold" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                            Panel Profesor
+                                        </h1>
+                                        <p class="text-gray-600 text-lg"><span class="font-bold" style="color: #059669;">${state.usuarioActual.nombre}</span></p>
+                                    </div>
+                                </div>
+                                <button onclick="cerrarSesion()" class="bg-red-500 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold">
+                                    <span>🚪 Salir</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6 slide-in-right">
+                            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                                <span class="text-4xl">📡</span> Estado del DECE
+                            </h2>
+                            <div class="${state.estadoDECE.disponible ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'} p-8 rounded-2xl text-center text-white shadow-xl">
+                                <div class="text-6xl mb-3">${state.estadoDECE.disponible ? '✅' : '❌'}</div>
+                                <div class="text-3xl font-black mb-2">
+                                    ${state.estadoDECE.disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
+                                </div>
+                                <p class="text-lg opacity-90">${state.estadoDECE.disponible ? '¡Puede solicitar turnos para estudiantes!' : 'El DECE no está recibiendo solicitudes'}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 scale-in">
+                            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                                <span class="text-4xl">📝</span> Solicitar Turno para Estudiante
+                            </h2>
+                            <form id="formTurnoProfesor" class="space-y-6">
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block font-bold text-gray-700 mb-2">📚 Seleccionar Curso *</label>
+                                        <select id="cursoSelect" required class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg select-modern" style="border-color: #34d399;">
+                                            <option value="">Seleccione un curso</option>
+                                            ${cursosDisponibles.map(curso => `
+                                                <option value="${curso}">${curso}</option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-gray-700 mb-2">👤 Seleccionar Estudiante *</label>
+                                        <select id="estudianteSelect" required disabled class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg select-modern" style="border-color: #34d399;">
+                                            <option value="">Primero seleccione un curso</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="estudianteInfo" class="hidden bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                                    <h4 class="font-bold text-green-800 mb-2">📋 Información del Estudiante</h4>
+                                    <div class="grid md:grid-cols-3 gap-4 text-sm">
+                                        <div><span class="font-semibold">Nombre:</span> <span id="infoNombre"></span></div>
+                                        <div><span class="font-semibold">Email:</span> <span id="infoEmail"></span></div>
+                                        <div><span class="font-semibold">Curso:</span> <span id="infoCurso"></span></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block font-bold text-gray-700 mb-2">📋 Motivo *</label>
+                                        <select name="motivo" required class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none text-lg select-modern" style="border-color: #34d399;">
+                                            <option value="">Seleccione un motivo</option>
+                                            <option value="Apoyo Académico">📖 Apoyo Académico</option>
+                                            <option value="Orientación Personal">💭 Orientación Personal</option>
+                                            <option value="Dificultades Familiares">👨‍👩‍👧‍👦 Dificultades Familiares</option>
+                                            <option value="Problemas de Comportamiento">⚠️ Problemas de Comportamiento</option>
+                                            <option value="Orientación Vocacional">🎯 Orientación Vocacional</option>
+                                            <option value="Situación de Riesgo">🚨 Situación de Riesgo</option>
+                                            <option value="Problemas de Salud Mental">🧠 Problemas de Salud Mental</option>
+                                            <option value="Acoso Escolar (Bullying)">🛡️ Acoso Escolar</option>
+                                            <option value="Otros">📝 Otros</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 mb-2">💬 Describe la situación del estudiante *</label>
+                                    <textarea name="situacion" rows="4" required class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #34d399;" placeholder="Por favor describe la situación del estudiante con detalle..."></textarea>
+                                </div>
+                                <button type="submit" ${!state.estadoDECE.disponible ? 'disabled' : ''} class="w-full text-white py-5 rounded-xl font-black text-xl hover:shadow-2xl transition-all disabled:bg-gray-400 disabled:cursor-not-allowed btn-modern" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                                    <span>✨ Solicitar Turno para Estudiante</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             `;
-            
-            return botones;
         }
 
-        // EVENT HANDLERS Y FUNCIONES GLOBALES
+        function renderDECE() {
+            return `
+                <div class="p-4 fade-in">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6 slide-in-left">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
+                                        🎓
+                                    </div>
+                                    <div>
+                                        <h1 class="text-3xl font-bold" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                            Panel DECE
+                                        </h1>
+                                        <p class="text-gray-600 text-lg">Departamento de Consejería Estudiantil</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button onclick="refrescarManual()" class="bg-blue-500 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:bg-blue-600 transition-all btn-modern font-bold">
+                                        <span>🔄 Actualizar</span>
+                                    </button>
+                                    <button onclick="cerrarSesion()" class="bg-red-500 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:bg-red-600 transition-all btn-modern font-bold">
+                                        <span>🚪 Salir</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid lg:grid-cols-3 gap-6 mb-6">
+                            <div class="lg:col-span-1">
+                                <div class="${state.estadoDECE.disponible ? 'bg-gradient-to-br from-green-400 to-green-500' : 'bg-gradient-to-br from-red-400 to-red-500'} control-disponible-card rounded-2xl text-center text-white shadow-xl card-hover">
+                                    <div class="control-disponible-icon">${state.estadoDECE.disponible ? '✅' : '❌'}</div>
+                                    <div class="control-disponible-title font-black">
+                                        ${state.estadoDECE.disponible ? 'DISPONIBLE' : 'NO DISPONIBLE'}
+                                    </div>
+                                    <p class="control-disponible-text opacity-90">${state.estadoDECE.disponible ? 'Recibiendo solicitudes' : 'Sistema pausado'}</p>
+                                    <button onclick="cambiarDisponibilidad()" class="${state.estadoDECE.disponible ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white control-disponible-btn rounded-xl font-bold transition-all btn-modern">
+                                        <span>${state.estadoDECE.disponible ? '⏸️ Pausar' : '▶️ Activar'}</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                        <div class="control-stats-number font-black">${state.estadisticas.pendientes}</div>
+                                        <div class="control-stats-label font-semibold opacity-90">⏳ Pendientes</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-green-400 to-green-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                        <div class="control-stats-number font-black">${state.estadisticas.aceptados}</div>
+                                        <div class="control-stats-label font-semibold opacity-90">✅ Aceptados</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-orange-400 to-orange-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                        <div class="control-stats-number font-black">${state.estadisticas.enProceso}</div>
+                                        <div class="control-stats-label font-semibold opacity-90">🔄 En proceso</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-blue-400 to-blue-500 control-stats-card rounded-xl text-center text-white shadow-lg card-hover">
+                                        <div class="control-stats-number font-black">${state.estadisticas.atendidos}</div>
+                                        <div class="control-stats-label font-semibold opacity-90">✔️ Atendidos</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+                                <span class="text-3xl">📊</span> Estadísticas del Día
+                            </h2>
+                            <div id="estadisticas">
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-5 rounded-2xl text-center border-2 border-gray-300 card-hover">
+                                        <div class="text-3xl font-black text-gray-700 mb-1">${state.estadisticas.totalHoy}</div>
+                                        <div class="text-xs text-gray-600 font-semibold">📋 Total hoy</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-2xl text-center border-2 border-yellow-300 card-hover">
+                                        <div class="text-3xl font-black text-yellow-700 mb-1">${state.turnos.filter(t => t.estado === 'pendiente' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
+                                        <div class="text-xs text-yellow-600 font-semibold">⏳ Pendientes</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl text-center border-2 border-orange-300 card-hover">
+                                        <div class="text-3xl font-black text-orange-700 mb-1">${state.estadisticas.enProceso}</div>
+                                        <div class="text-xs text-orange-600 font-semibold">🔄 En proceso</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl text-center border-2 border-blue-300 card-hover">
+                                        <div class="text-3xl font-black text-blue-700 mb-1">${state.turnos.filter(t => t.estado === 'atendido' && new Date(t.created_at).toLocaleDateString('es-ES') === new Date().toLocaleDateString('es-ES')).length}</div>
+                                        <div class="text-xs text-blue-600 font-semibold">✔️ Completados</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-red-50 to-red-100 p-5 rounded-2xl text-center border-2 border-red-300 card-hover">
+                                        <div class="text-3xl font-black text-red-700 mb-1">${state.estadisticas.no_asistio}</div>
+                                        <div class="text-xs text-red-600 font-semibold">🚫 No asistió</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl shadow-2xl p-6">
+                            <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                                    <span class="text-3xl">📋</span> Lista de Turnos
+                                </h2>
+                                <div class="flex gap-2 flex-wrap">
+                                    <button onclick="filtrarTurnos('todos')" class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filtroTurnos === 'todos' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">
+                                        📋 Todos
+                                    </button>
+                                    <button onclick="filtrarTurnos('pendiente')" class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filtroTurnos === 'pendiente' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}">
+                                        ⏳ Pendientes
+                                    </button>
+                                    <button onclick="filtrarTurnos('aceptado')" class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filtroTurnos === 'aceptado' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'}">
+                                        ✅ Aceptados
+                                    </button>
+                                    <button onclick="filtrarTurnos('en_proceso')" class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filtroTurnos === 'en_proceso' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'}">
+                                        🔄 En proceso
+                                    </button>
+                                    <button onclick="filtrarTurnos('atendido')" class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filtroTurnos === 'atendido' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}">
+                                        ✔️ Atendidos
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <input type="text" placeholder="🔍 Buscar por nombre, cédula, curso o email..." 
+                                    class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 text-lg"
+                                    oninput="state.busqueda = this.value; actualizarListaTurnosUI();">
+                            </div>
+                            
+                            <div id="listaTurnos">
+                                ${filtrarYBuscarTurnos().length === 0 
+                                    ? renderSinTurnos() 
+                                    : `<div class="space-y-4">${filtrarYBuscarTurnos().map(turno => renderTurnoCard(turno)).join('')}</div>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // EVENT HANDLERS
         function attachLoginEvents() {
             const btnEstudiante = document.getElementById('btnEstudiante');
             const btnProfesor = document.getElementById('btnProfesor');
             const btnDECE = document.getElementById('btnDECE');
             const formContainer = document.getElementById('formContainer');
-
-            btnEstudiante.addEventListener('click', () => {
-                formContainer.innerHTML = renderFormEstudiante();
-                attachFormEstudianteEvents();
-            });
-
-            btnProfesor.addEventListener('click', () => {
-                formContainer.innerHTML = renderFormProfesor();
-                attachFormProfesorEvents();
-            });
-
-            btnDECE.addEventListener('click', () => {
-                formContainer.innerHTML = renderFormDECE();
-                attachFormDECEEvents();
-            });
+            
+            if (btnEstudiante) {
+                btnEstudiante.addEventListener('click', () => {
+                    formContainer.innerHTML = renderFormEstudiante();
+                    attachEstudianteFormEvents();
+                });
+            }
+            
+            if (btnProfesor) {
+                btnProfesor.addEventListener('click', () => {
+                    formContainer.innerHTML = renderFormProfesor();
+                    attachProfesorFormEvents();
+                });
+            }
+            
+            if (btnDECE) {
+                btnDECE.addEventListener('click', () => {
+                    formContainer.innerHTML = renderFormDECE();
+                    attachDECEFormEvents();
+                });
+            }
         }
 
-        function attachFormEstudianteEvents() {
+        function attachEstudianteFormEvents() {
             const btnLoginEst = document.getElementById('btnLoginEst');
             const btnRegistroEst = document.getElementById('btnRegistroEst');
             const formEstudiante = document.getElementById('formEstudiante');
-
-            btnLoginEst.addEventListener('click', () => {
-                btnLoginEst.classList.add('border-b-4', 'border-blue-800', 'text-blue-800');
-                btnRegistroEst.classList.remove('border-b-4', 'border-blue-800', 'text-blue-800');
+            
+            if (btnLoginEst && btnRegistroEst && formEstudiante) {
                 formEstudiante.innerHTML = renderLoginEstudiante();
                 
-                document.getElementById('loginEstForm').addEventListener('submit', async (e) => {
+                btnLoginEst.addEventListener('click', () => {
+                    btnLoginEst.classList.add('border-b-4');
+                    btnLoginEst.style.borderColor = '#1e3a8a';
+                    btnLoginEst.style.color = '#1e3a8a';
+                    btnRegistroEst.classList.remove('border-b-4');
+                    btnRegistroEst.style.color = '#6b7280';
+                    formEstudiante.innerHTML = renderLoginEstudiante();
+                    attachLoginEstudianteEvents();
+                });
+                
+                btnRegistroEst.addEventListener('click', () => {
+                    btnRegistroEst.classList.add('border-b-4');
+                    btnRegistroEst.style.borderColor = '#1e3a8a';
+                    btnRegistroEst.style.color = '#1e3a8a';
+                    btnLoginEst.classList.remove('border-b-4');
+                    btnLoginEst.style.color = '#6b7280';
+                    formEstudiante.innerHTML = renderRegistroEstudiante();
+                    attachRegistroEstudianteEvents();
+                });
+                
+                attachLoginEstudianteEvents();
+            }
+        }
+
+        function attachLoginEstudianteEvents() {
+            const loginEstForm = document.getElementById('loginEstForm');
+            if (loginEstForm) {
+                loginEstForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
-                    const email = formData.get('email');
-                    const password = formData.get('password');
-                    
-                    const resultado = await loginEstudiante(email, password);
-                    if (!resultado) {
+                    const result = await loginEstudiante(formData.get('email'), formData.get('password'));
+                    if (!result) {
                         showNotification('Credenciales incorrectas', 'error');
                     }
                 });
-            });
+            }
+        }
 
-            btnRegistroEst.addEventListener('click', () => {
-                btnRegistroEst.classList.add('border-b-4', 'border-blue-800', 'text-blue-800');
-                btnLoginEst.classList.remove('border-b-4', 'border-blue-800', 'text-blue-800');
-                formEstudiante.innerHTML = renderRegistroEstudiante();
-                
-                // Obtener elementos
-                const nivelSelect = document.getElementById('nivelSelect');
-                const gradoContainer = document.getElementById('gradoContainer');
-                const gradoSelect = document.getElementById('gradoSelect');
-                const paraleloContainer = document.getElementById('paraleloContainer');
-                const paraleloSelect = document.getElementById('paraleloSelect');
-                
-                // Evento: Cambio de nivel
+        function attachRegistroEstudianteEvents() {
+            const registroEstForm = document.getElementById('registroEstForm');
+            const nivelSelect = document.getElementById('nivelSelect');
+            const gradoSelect = document.getElementById('gradoSelect');
+            const paraleloSelect = document.getElementById('paraleloSelect');
+            const gradoContainer = document.getElementById('gradoContainer');
+            const paraleloContainer = document.getElementById('paraleloContainer');
+            
+            if (nivelSelect) {
                 nivelSelect.addEventListener('change', (e) => {
                     const nivel = e.target.value;
-                    
-                    // Resetear campos
-                    gradoSelect.innerHTML = '<option value="">Selecciona tu curso</option>';
-                    paraleloSelect.innerHTML = '<option value="">Primero selecciona el curso</option>';
-                    paraleloContainer.style.display = 'none';
-                    
-                    if (!nivel) {
-                        gradoContainer.style.display = 'none';
-                        return;
-                    }
-                    
-                    // Mostrar contenedor de grado
-                    gradoContainer.style.display = 'block';
-                    
-                    // Cargar cursos disponibles para el nivel seleccionado EN ORDEN
-                    const nivelData = CURSOS_PARALELOS[nivel];
-                    if (nivelData && nivelData.cursos) {
-                        // Usar el array ordenado de cursos
-                        nivelData.cursos.forEach(curso => {
-                            const option = document.createElement('option');
-                            option.value = curso;
-                            option.textContent = curso;
-                            gradoSelect.appendChild(option);
+                    if (nivel && CURSOS_PARALELOS[nivel]) {
+                        gradoSelect.innerHTML = '<option value="">Selecciona tu curso</option>';
+                        CURSOS_PARALELOS[nivel].cursos.forEach(curso => {
+                            gradoSelect.innerHTML += `<option value="${curso}">${curso}</option>`;
                         });
+                        gradoContainer.style.display = 'block';
+                        paraleloContainer.style.display = 'none';
+                        paraleloSelect.innerHTML = '<option value="">Primero selecciona el curso</option>';
+                    } else {
+                        gradoContainer.style.display = 'none';
+                        paraleloContainer.style.display = 'none';
                     }
                 });
-                
-                // Evento: Cambio de grado/curso
+            }
+            
+            if (gradoSelect) {
                 gradoSelect.addEventListener('change', (e) => {
                     const nivel = nivelSelect.value;
-                    const curso = e.target.value;
-                    
-                    // Resetear paralelos
-                    paraleloSelect.innerHTML = '<option value="">Selecciona tu paralelo</option>';
-                    
-                    if (!curso || !nivel) {
-                        paraleloContainer.style.display = 'none';
-                        return;
-                    }
-                    
-                    // Mostrar contenedor de paralelo
-                    paraleloContainer.style.display = 'block';
-                    
-                    // Cargar paralelos disponibles para el curso seleccionado
-                    const nivelData = CURSOS_PARALELOS[nivel];
-                    const paralelosDisponibles = nivelData.paralelos[curso];
-                    if (paralelosDisponibles && paralelosDisponibles.length > 0) {
-                        paralelosDisponibles.forEach(paralelo => {
-                            const option = document.createElement('option');
-                            option.value = paralelo;
-                            option.textContent = `Paralelo ${paralelo}`;
-                            paraleloSelect.appendChild(option);
+                    const grado = e.target.value;
+                    if (grado && CURSOS_PARALELOS[nivel]?.paralelos[grado]) {
+                        paraleloSelect.innerHTML = '<option value="">Selecciona tu paralelo</option>';
+                        CURSOS_PARALELOS[nivel].paralelos[grado].forEach(paralelo => {
+                            paraleloSelect.innerHTML += `<option value="${paralelo}">${paralelo}</option>`;
                         });
+                        paraleloContainer.style.display = 'block';
+                    } else {
+                        paraleloContainer.style.display = 'none';
                     }
                 });
-                
-                // Evento: Submit del formulario
-                document.getElementById('registroEstForm').addEventListener('submit', async (e) => {
+            }
+            
+            if (registroEstForm) {
+                registroEstForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
-                    
-                    const nivel = formData.get('nivel');
-                    const grado = formData.get('grado');
-                    const paralelo = formData.get('paralelo');
-                    
-                    // Construir el nombre completo del curso
-                    let cursoCompleto = `${grado} ${paralelo}`;
-                    
-                    const datos = {
+                    await registrarEstudiante({
                         nombre: formData.get('nombre'),
                         email: formData.get('email'),
                         cedula: formData.get('cedula'),
-                        nivel: nivel,
-                        grado: grado,
-                        especialidad: 'N/A',  // Ya no se usa por separado
-                        paralelo: paralelo,
+                        nivel: formData.get('nivel'),
+                        grado: formData.get('grado'),
+                        paralelo: formData.get('paralelo'),
                         password: formData.get('password')
-                    };
-                    
-                    await registrarEstudiante(datos);
+                    });
                 });
-            });
-
-            btnLoginEst.click();
+            }
         }
 
-        function attachFormDECEEvents() {
-            document.getElementById('loginDECEForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const email = formData.get('email');
-                const password = formData.get('password');
-                
-                if (!loginDECE(email, password)) {
-                    showNotification('Credenciales incorrectas', 'error');
-                }
-            });
-
-            document.getElementById('btnVolverLogin').addEventListener('click', () => {
-                document.getElementById('formContainer').innerHTML = '';
-            });
+        function attachProfesorFormEvents() {
+            const loginProfesorForm = document.getElementById('loginProfesorForm');
+            const btnVolverLoginProf = document.getElementById('btnVolverLoginProf');
+            
+            if (loginProfesorForm) {
+                loginProfesorForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const result = await loginProfesor(formData.get('email'));
+                    if (!result) {
+                        showNotification('Email inválido', 'error');
+                    }
+                });
+            }
+            
+            if (btnVolverLoginProf) {
+                btnVolverLoginProf.addEventListener('click', () => {
+                    document.getElementById('formContainer').innerHTML = '';
+                });
+            }
         }
 
-
-        
-        function attachFormProfesorEvents() {
-            document.getElementById('loginProfesorForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const email = formData.get('email');
-                await loginProfesor(email);
-            });
-
-            document.getElementById('btnVolverLoginProf').addEventListener('click', () => {
-                document.getElementById('formContainer').innerHTML = '';
-            });
+        function attachDECEFormEvents() {
+            const loginDECEForm = document.getElementById('loginDECEForm');
+            const btnVolverLogin = document.getElementById('btnVolverLogin');
+            
+            if (loginDECEForm) {
+                loginDECEForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const result = loginDECE(formData.get('email'), formData.get('password'));
+                    if (!result) {
+                        showNotification('Credenciales DECE incorrectas', 'error');
+                    }
+                });
+            }
+            
+            if (btnVolverLogin) {
+                btnVolverLogin.addEventListener('click', () => {
+                    document.getElementById('formContainer').innerHTML = '';
+                });
+            }
         }
-        
+
         function attachProfesorEvents() {
-            // Event handler para cambio de curso
             const cursoSelect = document.getElementById('cursoSelect');
             const estudianteSelect = document.getElementById('estudianteSelect');
             const estudianteInfo = document.getElementById('estudianteInfo');
             
-            cursoSelect.addEventListener('change', (e) => {
-                const curso = e.target.value;
-                estudianteSelect.innerHTML = '<option value="">Selecciona un estudiante</option>';
-                estudianteInfo.classList.add('hidden');
-                
-                if (curso && ESTUDIANTES_BD[curso]) {
-                    estudianteSelect.disabled = false;
-                    estudianteSelect.classList.remove('bg-gray-100');
-                    estudianteSelect.style.borderColor = '#60a5fa';
+            if (cursoSelect) {
+                cursoSelect.addEventListener('change', (e) => {
+                    const curso = e.target.value;
+                    estudianteSelect.innerHTML = '<option value="">Seleccione un estudiante</option>';
                     
-                    ESTUDIANTES_BD[curso].forEach(est => {
-                        const option = document.createElement('option');
-                        option.value = JSON.stringify(est);
-                        option.textContent = est['Nombre completo estudiante'];
-                        estudianteSelect.appendChild(option);
-                    });
-                } else {
-                    estudianteSelect.disabled = true;
-                    estudianteSelect.classList.add('bg-gray-100');
-                }
-            });
-            
-            // Event handler para selección de estudiante
-            estudianteSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    const estudiante = JSON.parse(e.target.value);
-                    const curso = cursoSelect.value;
-                    
-                    document.getElementById('infoNombre').textContent = estudiante['Nombre completo estudiante'];
-                    document.getElementById('infoEmail').textContent = estudiante['Email estudiante'];
-                    document.getElementById('infoCurso').textContent = curso;
-                    estudianteInfo.classList.remove('hidden');
-                } else {
+                    if (curso && ESTUDIANTES_BD[curso]) {
+                        ESTUDIANTES_BD[curso].forEach(estudiante => {
+                            const option = document.createElement('option');
+                            option.value = JSON.stringify(estudiante);
+                            option.textContent = estudiante['Nombre completo estudiante'];
+                            estudianteSelect.appendChild(option);
+                        });
+                        estudianteSelect.disabled = false;
+                    } else {
+                        estudianteSelect.disabled = true;
+                    }
                     estudianteInfo.classList.add('hidden');
-                }
-            });
+                });
+            }
             
-            // Event handler para el formulario
-            document.getElementById('formTurnoProfesor').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const estudianteSelect = document.getElementById('estudianteSelect');
-                if (!estudianteSelect.value) {
-                    showNotification('Debes seleccionar un estudiante', 'error');
-                    return;
-                }
-                
-                const estudiante = JSON.parse(estudianteSelect.value);
-                const curso = document.getElementById('cursoSelect').value;
-                const formData = new FormData(e.target);
-                
-                const turnoData = {
-                    nombre: estudiante['Nombre completo estudiante'],
-                    email_estudiante: estudiante['Email estudiante'],
-                    cedula: 'N/A', // Los profesores no tienen acceso a cédulas
-                    curso: curso,
-                    motivo: formData.get('motivo'),
-                    situacion: formData.get('situacion'),
-                    solicitado_por: 'profesor',
-                    email_profesor: state.usuarioActual.email,
-                    nombre_profesor: state.usuarioActual.nombre
-                };
-                
-                await registrarTurnoProfesor(turnoData);
-            });
+            if (estudianteSelect) {
+                estudianteSelect.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        const estudiante = JSON.parse(e.target.value);
+                        const curso = cursoSelect.value;
+                        
+                        document.getElementById('infoNombre').textContent = estudiante['Nombre completo estudiante'];
+                        document.getElementById('infoEmail').textContent = estudiante['Email estudiante'];
+                        document.getElementById('infoCurso').textContent = curso;
+                        estudianteInfo.classList.remove('hidden');
+                    } else {
+                        estudianteInfo.classList.add('hidden');
+                    }
+                });
+            }
+            
+            const formTurnoProfesor = document.getElementById('formTurnoProfesor');
+            if (formTurnoProfesor) {
+                formTurnoProfesor.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const estudianteSelect = document.getElementById('estudianteSelect');
+                    if (!estudianteSelect.value) {
+                        showNotification('Debes seleccionar un estudiante', 'error');
+                        return;
+                    }
+                    
+                    const estudiante = JSON.parse(estudianteSelect.value);
+                    const curso = document.getElementById('cursoSelect').value;
+                    const formData = new FormData(e.target);
+                    
+                    const turnoData = {
+                        nombre: estudiante['Nombre completo estudiante'],
+                        email_estudiante: estudiante['Email estudiante'],
+                        cedula: 'N/A',
+                        curso: curso,
+                        motivo: formData.get('motivo'),
+                        situacion: formData.get('situacion'),
+                        solicitado_por: 'profesor',
+                        email_profesor: state.usuarioActual.email,
+                        nombre_profesor: state.usuarioActual.nombre
+                    };
+                    
+                    await registrarTurnoProfesor(turnoData);
+                });
+            }
         }
-            function attachEstudianteEvents() {
+
+        function attachEstudianteEvents() {
             const formTurno = document.getElementById('formTurno');
             if (formTurno) {
                 formTurno.addEventListener('submit', (e) => {
@@ -2572,7 +2556,6 @@
         
         window.refrescarManual = async () => {
             await cargarDatos();
-            // Forzar renderizado completo solo si estamos en el panel DECE
             if (state.vista === 'dece') {
                 render();
             }
@@ -2593,7 +2576,6 @@
             const hora = prompt('Modificar hora de inicio (formato 24h, ej: 10:00):', HoraUtils.extraerHoraInicio(horaActual) || '10:00');
             if (hora && hora !== horaActual && /^\d{1,2}:\d{2}$/.test(hora)) {
                 try {
-                    // Regenerar el rango completo con 40 minutos
                     const rangoCompleto = HoraUtils.generarRango(hora);
                     
                     const { error } = await supabase.from('turnos').update({ 
@@ -2687,7 +2669,6 @@
                 const { tipo, usuario } = JSON.parse(sesion);
                 state.tipoUsuario = tipo;
                 state.vista = tipo;
-                // Restaurar usuario para TODOS los tipos (estudiante, profesor, dece)
                 state.usuarioActual = usuario;
             }
         }
@@ -2705,12 +2686,28 @@
             }, 10000);
         }
 
-        // Inicialización
+        // Ocultar pantalla de carga
+        function ocultarPantallaCarga() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+            }
+        }
+
+        // ========== INICIALIZACIÓN OPTIMIZADA ==========
         async function init() {
-            // Cargar base de datos de estudiantes
-            await cargarEstudiantes();
+            console.log('🚀 Iniciando Sistema DECE...');
+            const startTime = performance.now();
             
-            await verificarConfiguracion();
+            // Inicializar EmailJS (asíncrono, no bloquea)
+            setTimeout(initEmailJS, 100);
+            
+            // Cargar datos en paralelo
+            const [estudiantesOk] = await Promise.all([
+                cargarEstudiantes(),
+                verificarConfiguracion()
+            ]);
+            
             verificarSesion();
             
             if (state.vista !== 'login') {
@@ -2731,9 +2728,20 @@
             
             render();
             iniciarAutoRefresh();
+            
+            // Ocultar pantalla de carga
+            ocultarPantallaCarga();
+            
+            const endTime = performance.now();
+            console.log(`✅ Sistema listo en ${(endTime - startTime).toFixed(0)}ms`);
         }
 
-        init();
+        // Esperar a que el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>
