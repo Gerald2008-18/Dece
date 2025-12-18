@@ -226,8 +226,38 @@
     <script>
         // SISTEMA DE NOTIFICACIONES
         function showNotification(mensaje, tipo = 'info') {
-            // Notificaciones desactivadas por solicitud del usuario
-            return;
+            // Solo mostrar notificación para solicitud de turno de profesor
+            if (mensaje !== 'El turno ha sido solicitado') {
+                return;
+            }
+            
+            const container = document.getElementById('notifications');
+            const id = Date.now();
+            
+            const colores = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            
+            const notif = document.createElement('div');
+            notif.id = `notif-${id}`;
+            notif.className = `${colores[tipo]} text-white px-6 py-4 rounded-xl shadow-2xl max-w-md fade-in`;
+            notif.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">${tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : tipo === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                    <span class="font-semibold">${mensaje}</span>
+                </div>
+            `;
+            
+            container.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.opacity = '0';
+                notif.style.transform = 'translateX(400px)';
+                setTimeout(() => notif.remove(), 300);
+            }, 4000);
         }
         
         function playNotificationSound() {
@@ -1330,7 +1360,7 @@
                 
                 if (data && data.length > 0) {
                     await cargarDatos();
-                    showNotification(`¡Turno registrado exitosamente para ${turnoData.nombre}! 🎉`, 'success');
+                    showNotification('El turno ha sido solicitado', 'success');
                     
                     document.getElementById('formTurnoProfesor').reset();
                     document.getElementById('estudianteSelect').disabled = true;
@@ -1596,7 +1626,6 @@
                     <div>
                         <label class="block font-bold mb-2 text-sm" style="color: #065f46;">📧 Correo Institucional</label>
                         <input type="email" name="email" required pattern=".+@uepdc\\.edu\\.ec$" class="w-full px-5 py-4 border-2 rounded-xl focus:outline-none text-lg" style="border-color: #34d399;" placeholder="profesor@uepdc.edu.ec">
-                        <p class="text-xs mt-2" style="color: #065f46;">⚠️ Solo correos @uepdc.edu.ec (NO @est.uepdc.edu.ec)</p>
                     </div>
                     <button type="submit" class="w-full text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all btn-modern" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
                         <span>🚀 Acceder al Panel de Profesores</span>
