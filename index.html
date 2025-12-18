@@ -116,7 +116,6 @@
         
         .badge-en-proceso {
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            animation: pulse 2s ease-in-out infinite;
         }
         
         ::-webkit-scrollbar {
@@ -486,16 +485,12 @@
                 return false;
             }
             
-            const emailLimpio = String(emailEstudiante).trim();
-            
-            if (!emailLimpio || emailLimpio === 'null' || emailLimpio === 'undefined') {
-                console.error('❌ Email vacío o inválido');
-                return false;
-            }
-            
+            const emailEstudianteLimpio = String(emailEstudiante).trim();
+            const emailProfesor = String(turno.email_profesor || '').trim();
             const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!regexEmail.test(emailLimpio)) {
-                console.error('❌ Email con formato inválido:', emailLimpio);
+            
+            if (!regexEmail.test(emailEstudianteLimpio)) {
+                console.error('❌ Email del estudiante con formato inválido:', emailEstudianteLimpio);
                 return false;
             }
             
@@ -516,11 +511,10 @@
                     })
                     : 'No disponible';
                 
-                const esProfesor = turno.solicitado_por === 'profesor';
-                
+                // Template params - funciona para ambos casos (estudiante y profesor)
                 const templateParams = {
-                    to_email: String(emailLimpio),
-                    reply_to: String(emailLimpio),
+                    to_email: emailEstudianteLimpio,
+                    reply_to: emailEstudianteLimpio,
                     to_name: String(turno.nombre || 'Estudiante'),
                     student_name: String(turno.nombre || 'Estudiante'),
                     turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
@@ -530,22 +524,34 @@
                     motivo: String(turno.motivo || 'No especificado'),
                     curso: String(turno.curso || 'No especificado'),
                     cedula: String(turno.cedula || 'No especificada'),
-                    teacher_name: esProfesor ? String(turno.nombre_profesor || 'Profesor') : '',
-                    teacher_email: esProfesor ? String(turno.email_profesor || '') : ''
+                    teacher_name: String(turno.nombre_profesor || ''),
+                    teacher_email: emailProfesor
                 };
                 
-                const templateId = esProfesor ? 
-                    EMAILJS_CONFIG.TEMPLATE_ID_PROFESOR : 
-                    EMAILJS_CONFIG.TEMPLATE_ID;
-                
-                const response = await emailjs.send(
+                // Enviar al estudiante
+                await emailjs.send(
                     EMAILJS_CONFIG.SERVICE_ID,
-                    templateId,
+                    EMAILJS_CONFIG.TEMPLATE_ACEPTADO_UNIFICADO,
                     templateParams
                 );
+                console.log('✅ Email de aceptación enviado al estudiante');
                 
-                console.log('✅ EMAIL DE ACEPTACIÓN ENVIADO');
-                showNotification(`📧 Email enviado a ${emailLimpio}`, 'success');
+                // Si fue solicitado por profesor, también enviar al profesor
+                if (turno.solicitado_por === 'profesor' && regexEmail.test(emailProfesor)) {
+                    templateParams.to_email = emailProfesor;
+                    templateParams.to_name = turno.nombre_profesor;
+                    
+                    await emailjs.send(
+                        EMAILJS_CONFIG.SERVICE_ID,
+                        EMAILJS_CONFIG.TEMPLATE_ACEPTADO_UNIFICADO,
+                        templateParams
+                    );
+                    console.log('✅ Email de aceptación enviado al profesor');
+                    showNotification(`📧 Notificaciones enviadas al estudiante y profesor`, 'success');
+                } else {
+                    showNotification(`📧 Email enviado a ${emailEstudianteLimpio}`, 'success');
+                }
+                
                 return true;
                 
             } catch (error) {
@@ -555,8 +561,9 @@
         }
         
         // ========== NUEVA FUNCIÓN: EMAIL DE RECHAZO PARA ESTUDIANTES ==========
-        async function enviarEmailRechazoEstudiante(turno, motivoRechazo) {
-            console.log('📧 ENVIANDO EMAIL DE RECHAZO A ESTUDIANTE');
+        // ========== FUNCIÓN UNIFICADA: EMAIL DE RECHAZO ==========
+        async function enviarEmailRechazo(turno, motivoRechazo) {
+            console.log('📧 ENVIANDO EMAIL DE RECHAZO');
             
             if (!emailJSReady || typeof emailjs === 'undefined') {
                 console.warn('⚠️ EmailJS no está disponible');
@@ -568,10 +575,12 @@
                 return false;
             }
             
-            const emailLimpio = String(turno.email_estudiante).trim();
+            const emailEstudiante = String(turno.email_estudiante || '').trim();
+            const emailProfesor = String(turno.email_profesor || '').trim();
             const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!regexEmail.test(emailLimpio)) {
-                console.error('❌ Email inválido');
+            
+            if (!regexEmail.test(emailEstudiante)) {
+                console.error('❌ Email del estudiante inválido');
                 return false;
             }
             
@@ -585,102 +594,45 @@
                     })
                     : 'No disponible';
                 
+                // Template params - funciona para ambos casos
                 const templateParams = {
-                    to_email: emailLimpio,
-                    reply_to: emailLimpio,
+                    to_email: emailEstudiante,
+                    reply_to: emailEstudiante,
                     to_name: String(turno.nombre || 'Estudiante'),
                     student_name: String(turno.nombre || 'Estudiante'),
                     turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
                     fecha_solicitud: fechaSolicitud,
                     motivo_turno: String(turno.motivo || 'No especificado'),
                     motivo_rechazo: String(motivoRechazo || 'No especificado'),
-                    curso: String(turno.curso || 'No especificado')
+                    curso: String(turno.curso || 'No especificado'),
+                    teacher_name: String(turno.nombre_profesor || ''),
+                    teacher_email: emailProfesor
                 };
                 
-                const response = await emailjs.send(
+                // Enviar al estudiante
+                await emailjs.send(
                     EMAILJS_CONFIG.SERVICE_ID,
-                    EMAILJS_CONFIG.TEMPLATE_RECHAZO_ESTUDIANTE,
+                    EMAILJS_CONFIG.TEMPLATE_RECHAZO_UNIFICADO,
                     templateParams
                 );
+                console.log('✅ Email de rechazo enviado al estudiante');
                 
-                console.log('✅ EMAIL DE RECHAZO A ESTUDIANTE ENVIADO');
-                showNotification(`📧 Notificación de rechazo enviada a ${emailLimpio}`, 'info');
-                return true;
-                
-            } catch (error) {
-                console.error('❌ ERROR AL ENVIAR EMAIL DE RECHAZO:', error);
-                // No bloquear el flujo si falla el email
-                return false;
-            }
-        }
-        
-        // ========== NUEVA FUNCIÓN: EMAIL DE RECHAZO PARA TURNOS DE PROFESORES ==========
-        async function enviarEmailRechazoProfesor(turno, motivoRechazo) {
-            console.log('📧 ENVIANDO EMAIL DE RECHAZO (TURNO SOLICITADO POR PROFESOR)');
-            
-            if (!emailJSReady || typeof emailjs === 'undefined') {
-                console.warn('⚠️ EmailJS no está disponible');
-                return false;
-            }
-            
-            if (!turno) {
-                console.error('❌ Datos del turno incompletos');
-                return false;
-            }
-            
-            // Enviar email tanto al estudiante como al profesor
-            const emailEstudiante = String(turno.email_estudiante || '').trim();
-            const emailProfesor = String(turno.email_profesor || '').trim();
-            const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            try {
-                const fechaSolicitud = turno.created_at 
-                    ? new Date(turno.created_at).toLocaleDateString('es-ES', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    })
-                    : 'No disponible';
-                
-                const templateParams = {
-                    to_email: emailProfesor || emailEstudiante, // Prioridad al profesor
-                    reply_to: emailProfesor || emailEstudiante,
-                    to_name: String(turno.nombre_profesor || 'Profesor'),
-                    teacher_name: String(turno.nombre_profesor || 'Profesor'),
-                    teacher_email: emailProfesor,
-                    student_name: String(turno.nombre || 'Estudiante'),
-                    student_email: emailEstudiante,
-                    turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
-                    fecha_solicitud: fechaSolicitud,
-                    motivo_turno: String(turno.motivo || 'No especificado'),
-                    motivo_rechazo: String(motivoRechazo || 'No especificado'),
-                    curso: String(turno.curso || 'No especificado')
-                };
-                
-                // Enviar al profesor
-                if (regexEmail.test(emailProfesor)) {
+                // Si fue solicitado por profesor, también enviar al profesor
+                if (turno.solicitado_por === 'profesor' && regexEmail.test(emailProfesor)) {
+                    templateParams.to_email = emailProfesor;
+                    templateParams.to_name = turno.nombre_profesor;
+                    
                     await emailjs.send(
                         EMAILJS_CONFIG.SERVICE_ID,
-                        EMAILJS_CONFIG.TEMPLATE_RECHAZO_PROFESOR,
+                        EMAILJS_CONFIG.TEMPLATE_RECHAZO_UNIFICADO,
                         templateParams
                     );
                     console.log('✅ Email de rechazo enviado al profesor');
+                    showNotification(`📧 Notificaciones de rechazo enviadas al estudiante y profesor`, 'info');
+                } else {
+                    showNotification(`📧 Notificación de rechazo enviada`, 'info');
                 }
                 
-                // También enviar al estudiante
-                if (regexEmail.test(emailEstudiante) && emailEstudiante !== emailProfesor) {
-                    templateParams.to_email = emailEstudiante;
-                    templateParams.to_name = turno.nombre;
-                    await emailjs.send(
-                        EMAILJS_CONFIG.SERVICE_ID,
-                        EMAILJS_CONFIG.TEMPLATE_RECHAZO_ESTUDIANTE,
-                        templateParams
-                    );
-                    console.log('✅ Email de rechazo enviado al estudiante');
-                }
-                
-                showNotification(`📧 Notificaciones de rechazo enviadas`, 'info');
                 return true;
                 
             } catch (error) {
@@ -1468,20 +1420,11 @@
                     }
                 }
                 
-                // ========== NUEVO: ENVIAR EMAIL DE RECHAZO ==========
+                // ========== ENVIAR EMAIL DE RECHAZO ==========
                 if (nuevoEstado === 'rechazado' && turnoAntes) {
-                    // Verificar si fue solicitado por profesor o estudiante
-                    if (turnoAntes.solicitado_por === 'profesor') {
-                        // Turno solicitado por profesor - enviar a ambos
-                        enviarEmailRechazoProfesor(turnoAntes, motivoRechazo).catch(err => {
-                            console.warn('Email de rechazo no enviado:', err);
-                        });
-                    } else {
-                        // Turno solicitado por estudiante
-                        enviarEmailRechazoEstudiante(turnoAntes, motivoRechazo).catch(err => {
-                            console.warn('Email de rechazo no enviado:', err);
-                        });
-                    }
+                    enviarEmailRechazo(turnoAntes, motivoRechazo).catch(err => {
+                        console.warn('Email de rechazo no enviado:', err);
+                    });
                 }
                 
             } catch (error) {
@@ -2064,11 +2007,11 @@
             }
             
             const coloresEstado = {
-                'pendiente': 'bg-yellow-50 border-yellow-300',
-                'aceptado': estaEnProceso ? 'bg-orange-50 border-orange-300' : 'bg-green-50 border-green-300',
-                'rechazado': 'bg-red-50 border-red-200',
-                'atendido': 'bg-blue-50 border-blue-200',
-                'no_asistio': 'bg-purple-50 border-purple-200'
+                'pendiente': 'bg-yellow-200 border-yellow-500',
+                'aceptado': estaEnProceso ? 'bg-orange-200 border-orange-500' : 'bg-green-200 border-green-500',
+                'rechazado': 'bg-red-200 border-red-500',
+                'atendido': 'bg-blue-200 border-blue-500',
+                'no_asistio': 'bg-purple-200 border-purple-500'
             };
             
             const iconosEstado = {
