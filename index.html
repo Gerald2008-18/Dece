@@ -1406,10 +1406,10 @@
                 if (error) throw error;
                 
                 const mensajes = {
-                    'aceptado': '✅ Turno aceptado correctamente',
-                    'rechazado': '❌ Turno rechazado',
-                    'atendido': '✔️ Turno marcado como atendido',
-                    'no_asistio': '🚫 Marcado como "No asistió"'
+                    'aceptado': 'Turno aceptado correctamente',
+                    'rechazado': 'Turno rechazado',
+                    'atendido': 'Turno marcado como atendido',
+                    'no_asistio': 'Marcado como "No asistió"'
                 };
                 
                 showNotification(mensajes[nuevoEstado] || 'Turno actualizado', 'success');
