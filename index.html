@@ -19,46 +19,6 @@
         }
         
         /* PANTALLA DE CARGA */
-        .loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #3b82f6 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-        
-        .loading-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top-color: #fbbf24;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            color: white;
-            margin-top: 20px;
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -256,12 +216,6 @@
 </head>
 <body class="gradient-bg min-h-screen relative overflow-x-hidden">
     <!-- PANTALLA DE CARGA -->
-    <div id="loadingScreen" class="loading-screen">
-        <img src="https://i.ibb.co/wNhQpyX0/image-30.png" alt="UEPDC" class="logo-institucional mb-4">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Cargando Sistema DECE...</div>
-    </div>
-
     <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
     
     <audio id="notificationSound" preload="auto">
@@ -2580,14 +2534,6 @@
             }, 10000);
         }
 
-        // Ocultar pantalla de carga
-        function ocultarPantallaCarga() {
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                loadingScreen.classList.add('hidden');
-            }
-        }
-
         // ========== INICIALIZACIÓN OPTIMIZADA ==========
         async function init() {
             console.log('🚀 Iniciando Sistema DECE...');
@@ -2622,9 +2568,6 @@
             
             render();
             iniciarAutoRefresh();
-            
-            // Ocultar pantalla de carga
-            ocultarPantallaCarga();
             
             const endTime = performance.now();
             console.log(`✅ Sistema listo en ${(endTime - startTime).toFixed(0)}ms`);
