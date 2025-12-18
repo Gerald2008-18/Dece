@@ -1989,6 +1989,171 @@
             `;
         }
 
+        function renderModalHistorial() {
+            const coloresHistorial = {
+                'atendido': 'bg-green-50 border-green-300',
+                'rechazado': 'bg-red-50 border-red-300',
+                'no_asistio': 'bg-orange-50 border-orange-300',
+                'pendiente': 'bg-yellow-50 border-yellow-300',
+                'aceptado': 'bg-blue-50 border-blue-300'
+            };
+            
+            return `
+                <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick="cerrarHistorial()">
+                    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="sticky top-0 bg-white border-b-2 border-gray-200 p-6 rounded-t-3xl z-10">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                                    <span class="text-4xl">📚</span> Mi Historial
+                                </h2>
+                                <button onclick="cerrarHistorial()" class="text-gray-500 hover:text-gray-700 text-4xl font-bold">
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 space-y-4">
+                            ${state.historialEstudiante.length > 0 ? state.historialEstudiante.map(turno => `
+                                <div class="border-2 ${coloresHistorial[turno.estado] || 'bg-gray-50 border-gray-300'} rounded-2xl p-6 shadow-lg">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 class="text-2xl font-bold text-gray-800">Turno #${turno.numero_turno}</h3>
+                                            <p class="text-gray-600 mt-1">${new Date(turno.created_at).toLocaleDateString('es-ES')}</p>
+                                        </div>
+                                        <span class="text-3xl">
+                                            ${turno.estado === 'atendido' ? '✅' : turno.estado === 'rechazado' ? '❌' : turno.estado === 'no_asistio' ? '🚫' : turno.estado === 'aceptado' ? '✔️' : '⏳'}
+                                        </span>
+                                    </div>
+                                    <div class="space-y-2 text-gray-700">
+                                        <p><strong>📋 Motivo:</strong> ${turno.motivo}</p>
+                                        <p><strong>📊 Estado:</strong> ${turno.estado === 'atendido' ? 'Atendido' : turno.estado === 'rechazado' ? 'Rechazado' : turno.estado === 'no_asistio' ? 'No Asistió' : turno.estado === 'aceptado' ? 'Aceptado' : 'Pendiente'}</p>
+                                        ${turno.hora_atencion_programada ? `<p><strong>🕐 Hora:</strong> ${turno.hora_atencion_programada}</p>` : ''}
+                                        ${turno.motivo_rechazo ? `<p class="text-red-600"><strong>❌ Motivo de rechazo:</strong> ${turno.motivo_rechazo}</p>` : ''}
+                                    </div>
+                                </div>
+                            `).join('') : `
+                                <div class="text-center py-16">
+                                    <div class="text-8xl mb-6">📭</div>
+                                    <h3 class="text-3xl font-bold text-gray-700 mb-3">Sin historial</h3>
+                                    <p class="text-gray-500 text-lg">Aún no has solicitado ningún turno</p>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSinTurnos() {
+            return `
+                <div class="text-center py-16">
+                    <div class="text-8xl mb-6">📭</div>
+                    <h3 class="text-3xl font-bold text-gray-700 mb-3">No hay turnos</h3>
+                    <p class="text-gray-500 text-lg">No se encontraron turnos con los filtros actuales</p>
+                </div>
+            `;
+        }
+
+        function renderTurnoCard(turno) {
+            let estaEnProceso = false;
+            if (turno.estado === 'aceptado' && turno.hora_atencion_programada) {
+                const horaInicio = HoraUtils.extraerHoraInicio(turno.hora_atencion_programada);
+                if (horaInicio) {
+                    estaEnProceso = HoraUtils.citaEnProceso(horaInicio);
+                }
+            }
+            
+            const coloresEstado = {
+                'pendiente': 'bg-yellow-50 border-yellow-300',
+                'aceptado': estaEnProceso ? 'bg-orange-50 border-orange-300' : 'bg-green-50 border-green-300',
+                'rechazado': 'bg-red-50 border-red-200',
+                'atendido': 'bg-blue-50 border-blue-200',
+                'no_asistio': 'bg-purple-50 border-purple-200'
+            };
+            
+            const iconosEstado = {
+                'pendiente': '⏳',
+                'aceptado': estaEnProceso ? '🔄' : '✅',
+                'rechazado': '❌',
+                'atendido': '✔️',
+                'no_asistio': '🚫'
+            };
+            
+            const esSolicitadoPorProfesor = turno.solicitado_por === 'profesor';
+            
+            return `
+                <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 ${coloresEstado[turno.estado]} card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">${iconosEstado[turno.estado]}</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">${turno.nombre}</h3>
+                                <p class="text-gray-600">${turno.curso}</p>
+                                ${esSolicitadoPorProfesor ? `
+                                    <p class="text-sm text-purple-600 font-semibold mt-1">👨‍🏫 Solicitado por: ${turno.nombre_profesor || 'Profesor'}</p>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">#${turno.numero_turno}</div>
+                            <div class="text-xs text-gray-400">${new Date(turno.created_at).toLocaleString('es-ES')}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div><span class="font-semibold">📋 Motivo:</span> ${turno.motivo}</div>
+                        <div><span class="font-semibold">📧 Email:</span> ${turno.email_estudiante || 'N/A'}</div>
+                        ${turno.hora_atencion_programada ? `
+                            <div class="col-span-2"><span class="font-semibold">🕐 Hora:</span> ${turno.hora_atencion_programada} 
+                                <button onclick="editarHora(${turno.id}, '${turno.hora_atencion_programada}')" class="text-blue-500 hover:text-blue-700 ml-2">✏️</button>
+                            </div>
+                        ` : ''}
+                        ${turno.motivo_rechazo ? `
+                            <div class="col-span-2 text-red-600"><span class="font-semibold">❌ Rechazo:</span> ${turno.motivo_rechazo}</div>
+                        ` : ''}
+                        ${turno.nota_dece ? `
+                            <div class="col-span-2 text-purple-600"><span class="font-semibold">📝 Nota DECE:</span> ${turno.nota_dece}</div>
+                        ` : ''}
+                    </div>
+                    
+                    ${turno.situacion ? `
+                        <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                            <span class="font-semibold text-gray-700">💬 Situación:</span>
+                            <p class="text-gray-600 mt-1">${turno.situacion}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${estaEnProceso ? `
+                        <div class="badge-en-proceso text-white px-4 py-2 rounded-lg text-center mb-4 font-bold">
+                            🔄 CITA EN PROCESO
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex flex-wrap gap-2">
+                        ${turno.estado === 'pendiente' ? `
+                            <button onclick="aceptarTurnoConHora(${turno.id})" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all font-semibold">
+                                ✅ Aceptar
+                            </button>
+                            <button onclick="rechazarTurno(${turno.id})" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all font-semibold">
+                                ❌ Rechazar
+                            </button>
+                        ` : ''}
+                        ${turno.estado === 'aceptado' ? `
+                            <button onclick="marcarAtendido(${turno.id})" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all font-semibold">
+                                ✔️ Atendido
+                            </button>
+                            <button onclick="marcarNoAsistio(${turno.id})" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all font-semibold">
+                                🚫 No asistió
+                            </button>
+                        ` : ''}
+                        <button onclick="agregarNotaDECE(${turno.id})" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-all font-semibold">
+                            📝 Nota
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderDECE() {
             return `
                 <div class="p-4 fade-in">
