@@ -538,29 +538,13 @@
                 console.log('Template ID:', EMAILJS_CONFIG.TEMPLATE_ACEPTADO_UNIFICADO);
                 console.log('Params:', templateParams);
                 
-                // Enviar al estudiante
+                // Enviar SOLO al estudiante (nunca al profesor)
                 await emailjs.send(
                     EMAILJS_CONFIG.SERVICE_ID,
                     EMAILJS_CONFIG.TEMPLATE_ACEPTADO_UNIFICADO,
                     templateParams
                 );
                 console.log('✅ Email de aceptación enviado al estudiante');
-                
-                // Si fue solicitado por profesor, también enviar al profesor
-                if (turno.solicitado_por === 'profesor' && regexEmail.test(emailProfesor)) {
-                    templateParams.to_email = emailProfesor;
-                    templateParams.to_name = turno.nombre_profesor;
-                    
-                    await emailjs.send(
-                        EMAILJS_CONFIG.SERVICE_ID,
-                        EMAILJS_CONFIG.TEMPLATE_ACEPTADO_UNIFICADO,
-                        templateParams
-                    );
-                    console.log('✅ Email de aceptación enviado al profesor');
-                    showNotification(`📧 Notificaciones enviadas al estudiante y profesor`, 'success');
-                } else {
-                    showNotification(`📧 Email enviado a ${emailEstudianteLimpio}`, 'success');
-                }
                 
                 return true;
                 
@@ -630,22 +614,6 @@
                     templateParams
                 );
                 console.log('✅ Email de rechazo enviado al estudiante');
-                
-                // Si fue solicitado por profesor, también enviar al profesor
-                if (turno.solicitado_por === 'profesor' && regexEmail.test(emailProfesor)) {
-                    templateParams.to_email = emailProfesor;
-                    templateParams.to_name = turno.nombre_profesor;
-                    
-                    await emailjs.send(
-                        EMAILJS_CONFIG.SERVICE_ID,
-                        EMAILJS_CONFIG.TEMPLATE_RECHAZO_UNIFICADO,
-                        templateParams
-                    );
-                    console.log('✅ Email de rechazo enviado al profesor');
-                    showNotification(`📧 Notificaciones de rechazo enviadas al estudiante y profesor`, 'info');
-                } else {
-                    showNotification(`📧 Notificación de rechazo enviada`, 'info');
-                }
                 
                 return true;
                 
