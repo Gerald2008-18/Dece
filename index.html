@@ -7,9 +7,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/wNhQpyX0/image-30.png">
     <link rel="shortcut icon" type="image/png" href="https://i.ibb.co/wNhQpyX0/image-30.png">
     <link rel="apple-touch-icon" href="https://i.ibb.co/wNhQpyX0/image-30.png">
-    <!-- Cargar Tailwind con defer para no bloquear -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Cargar EmailJS con defer -->
+ <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
@@ -139,7 +137,7 @@
             background-size: 1.5em;
         }
 
-        /* OPTIMIZACIONES RESPONSIVAS */
+    
         .control-disponible-card {
             padding: 1.5rem;
             min-height: auto;
@@ -226,7 +224,6 @@
     <script>
         // SISTEMA DE NOTIFICACIONES
         function showNotification(mensaje, tipo = 'info') {
-            // Solo mostrar notificación para solicitud de turno de profesor
             if (mensaje !== 'El turno ha sido solicitado') {
                 return;
             }
@@ -267,7 +264,7 @@
             }
         }
         
-        // BASE DE DATOS DE CURSOS Y PARALELOS (desde Excel UEPDC) - CORREGIDO Y ORDENADO
+        // BASE DE DATOS DE CURSOS Y PARALELOS 
         const CURSOS_PARALELOS = {
             "Inicial": {
                 "cursos": [
@@ -373,19 +370,19 @@
                 'Décimo Grado B - Educación General Básica': 30,
                 'Décimo Grado C - Educación General Básica': 31,
                 
-                // Bachillerato - Primer Año (NOMBRES SIMPLIFICADOS)
+                // Bachillerato - Primer Año 
                 'Primer Año BGU A - Bachillerato Ciencias': 40,
                 'Primer Año BGU B - Bachillerato Ciencias': 41,
                 'Primer Año BGU A - Bachillerato TICS Informática': 42,
                 'Primer Año BGU A - Bachillerato Contabilidad': 43,
                 
-                // Bachillerato - Segundo Año (NOMBRES SIMPLIFICADOS)
+                // Bachillerato - Segundo Año 
                 'Segundo Año BGU A - Bachillerato Ciencias': 50,
                 'Segundo Año BGU B - Bachillerato Ciencias': 51,
                 'Segundo Año BGU A - Bachillerato TICS Informática': 52,
                 'Segundo Año BGU A - Bachillerato Contabilidad': 53,
                 
-                // Bachillerato - Tercer Año (NOMBRES SIMPLIFICADOS)
+                // Bachillerato - Tercer Año 
                 'Tercer Año BGU A - Bachillerato Ciencias': 60,
                 'Tercer Año BGU B - Bachillerato Ciencias': 61,
                 'Tercer Año BGU A - Bachillerato TICS Informática': 62,
@@ -396,12 +393,12 @@
                 const prioridadA = ordenPrioridad[a] || 9999;
                 const prioridadB = ordenPrioridad[b] || 9999;
                 
-                // Si tienen prioridad definida, ordenar por prioridad
+        
                 if (prioridadA !== 9999 || prioridadB !== 9999) {
                     return prioridadA - prioridadB;
                 }
                 
-                // Si no tienen prioridad, ordenar alfabéticamente
+            
                 return a.localeCompare(b, 'es');
             });
         }
@@ -410,7 +407,7 @@
         // BASE DE DATOS DE ESTUDIANTES
         let ESTUDIANTES_BD = {};
         
-        // Cargar base de datos de estudiantes - OPTIMIZADO
+        // Cargar base de datos de estudiantes - 
         async function cargarEstudiantes() {
             try {
                 const response = await fetch('estudiantes_uepdc.json');
@@ -420,7 +417,7 @@
                 return true;
             } catch (error) {
                 console.error('❌ Error al cargar estudiantes:', error);
-                // No mostrar notificación para no bloquear la carga
+        
                 return false;
             }
         }
@@ -442,7 +439,7 @@
             return null;
         }
         
-        // CONFIGURACIÓN DE EMAILJS - ACTUALIZADO CON TEMPLATES DE RECHAZO
+        // CONFIGURACIÓN DE EMAILJS 
         const EMAILJS_CONFIG = {
             PUBLIC_KEY: 'RtA5YFyTxrNjrb_CX',
             SERVICE_ID: 'service_83qp86c',
@@ -450,10 +447,10 @@
             TEMPLATE_RECHAZO_UNIFICADO: 'template_x6r7fzo'
         };
         
-        // Variable para controlar si EmailJS está listo
+       
         let emailJSReady = false;
         
-        // Inicializar EmailJS - OPTIMIZADO (se ejecuta cuando el DOM está listo)
+        // Inicializar EmailJS 
         function initEmailJS() {
             try {
                 if (typeof emailjs !== 'undefined') {
@@ -554,7 +551,7 @@
             }
         }
         
-        // ========== FUNCIÓN UNIFICADA: EMAIL DE RECHAZO ==========
+    
         async function enviarEmailRechazo(turno, motivoRechazo) {
             console.log('📧 ENVIANDO EMAIL DE RECHAZO');
             
@@ -587,7 +584,7 @@
                     })
                     : 'No disponible';
                 
-                // Template params - funciona para ambos casos
+            
                 const templateParams = {
                     to_email: emailEstudiante,
                     reply_to: emailEstudiante,
@@ -632,7 +629,6 @@
             password: 'geraldmontoya'
         };
 
-        // UTILIDADES DE HORA - ECUADOR
         const HoraUtils = {
             getHoraEcuador() {
                 const ahora = new Date();
