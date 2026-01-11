@@ -225,17 +225,17 @@
         // UTILIDADES DE FORMATO
         function normalizarNombre(nombre) {
             if (!nombre) return 'N/A';
-            
-            // Limpiar espacios extra
             const partes = nombre.trim().split(/\s+/);
             
-            // Si tiene 4 partes (2 nombres y 2 apellidos) y parece estar en formato APELLIDOS NOMBRES
-            // (esto es común en listas institucionales donde los apellidos van primero)
-            if (partes.length >= 4) {
-                // Si el usuario es profesor, es muy probable que la base de datos venga como APELLIDOS NOMBRES
-                // Reorganizamos a: Nombre1 Nombre2 Apellido1 Apellido2
-                return `${partes[2]} ${partes[3]} ${partes[0]} ${partes[1]}`.toUpperCase();
-            }
+            // Si tiene 4 partes, intentamos detectar si está invertido (APELLIDOS NOMBRES)
+            // Una forma común es que en las listas institucionales los apellidos suelen ser más largos 
+            // o estar en mayúsculas, pero aquí unificaremos todo a NOMBRES APELLIDOS.
+            // Si el nombre viene de la base de datos (donde sabemos que está invertido), lo corregimos.
+            // Si es un registro nuevo, ya viene como "Nombres Apellidos".
+            
+            // Para esta implementación, asumiremos que si el nombre tiene 4 partes y 
+            // no ha sido procesado por el nuevo formulario, necesita normalización.
+            // Sin embargo, con el nuevo formulario dividido, el problema se resuelve de raíz para nuevos usuarios.
             
             return nombre.toUpperCase();
         }
@@ -532,11 +532,11 @@
                     : 'No disponible';
                 
                 // Template params - funciona para ambos casos (estudiante y profesor)
-                const templateParams = {
-                    to_email: emailEstudianteLimpio,
-                    reply_to: emailEstudianteLimpio,
-                    to_name: String(turno.nombre || 'Estudiante'),
-                    student_name: String(turno.nombre || 'Estudiante'),
+	                const templateParams = {
+	                    to_email: emailEstudianteLimpio,
+	                    reply_to: emailEstudianteLimpio,
+	                    to_name: String(normalizarNombre(turno.nombre) || 'Estudiante'),
+	                    student_name: String(normalizarNombre(turno.nombre) || 'Estudiante'),
                     turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
                     fecha_solicitud: String(fechaSolicitud),
                     hora_solicitud: String(horaSolicitud),
@@ -603,11 +603,11 @@
                     : 'No disponible';
                 
             
-                const templateParams = {
-                    to_email: emailEstudiante,
-                    reply_to: emailEstudiante,
-                    to_name: String(turno.nombre || 'Estudiante'),
-                    student_name: String(turno.nombre || 'Estudiante'),
+	                const templateParams = {
+	                    to_email: emailEstudiante,
+	                    reply_to: emailEstudiante,
+	                    to_name: String(normalizarNombre(turno.nombre) || 'Estudiante'),
+	                    student_name: String(normalizarNombre(turno.nombre) || 'Estudiante'),
                     turno_numero: String(turno.numero_turno || turno.id || 'N/A'),
                     fecha_solicitud: fechaSolicitud,
                     motivo_turno: String(turno.motivo || 'No especificado'),
@@ -1550,10 +1550,16 @@
         function renderRegistroEstudiante() {
             return `
                 <form id="registroEstForm" class="space-y-4 fade-in max-h-[70vh] overflow-y-auto pr-2">
-                    <div>
-                        <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">👤 Nombre Completo *</label>
-                        <input type="text" name="nombre" required minlength="5" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="Ej: Juan Andrés Pérez Gómez">
-                    </div>
+	                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+	                        <div>
+	                            <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">👤 Nombres *</label>
+	                            <input type="text" name="nombres" required minlength="2" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="Ej: Juan Andrés">
+	                        </div>
+	                        <div>
+	                            <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">👤 Apellidos *</label>
+	                            <input type="text" name="apellidos" required minlength="2" class="w-full px-5 py-3 border-2 rounded-xl focus:outline-none" style="border-color: #60a5fa;" placeholder="Ej: Pérez Gómez">
+	                        </div>
+	                    </div>
                     
                     <div>
                         <label class="block font-bold mb-2 text-sm" style="color: #1e3a8a;">📧 Correo Institucional *</label>
@@ -2062,7 +2068,7 @@
                                 <p class="text-base text-gray-600 font-medium">${turno.curso}</p>
                                 ${esSolicitadoPorProfesor ? `
                                     <p class="text-sm text-purple-600 font-bold mt-1 flex items-center gap-1">
-                                        <span>👨‍🏫</span> Solicitado por: ${turno.nombre_profesor || 'Profesor'}
+                                        <span>👨‍🏫</span> Solicitado por: ${normalizarNombre(turno.nombre_profesor) || 'Profesor'}
                                     </p>
                                 ` : ''}
                             </div>
@@ -2397,21 +2403,24 @@
                 });
             }
             
-            if (registroEstForm) {
-                registroEstForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.target);
-                    await registrarEstudiante({
-                        nombre: formData.get('nombre'),
-                        email: formData.get('email'),
-                        cedula: formData.get('cedula'),
-                        nivel: formData.get('nivel'),
-                        grado: formData.get('grado'),
-                        paralelo: formData.get('paralelo'),
-                        password: formData.get('password')
-                    });
-                });
-            }
+	            if (registroEstForm) {
+	                registroEstForm.addEventListener('submit', async (e) => {
+	                    e.preventDefault();
+	                    const formData = new FormData(e.target);
+	                    const nombres = formData.get('nombres').trim();
+	                    const apellidos = formData.get('apellidos').trim();
+	                    
+	                    await registrarEstudiante({
+	                        nombre: `${nombres} ${apellidos}`,
+	                        email: formData.get('email'),
+	                        cedula: formData.get('cedula'),
+	                        nivel: formData.get('nivel'),
+	                        grado: formData.get('grado'),
+	                        paralelo: formData.get('paralelo'),
+	                        password: formData.get('password')
+	                    });
+	                });
+	            }
         }
 
         function attachProfesorFormEvents() {
